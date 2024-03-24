@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import React from "react";
+import React, { type ReactNode } from "react";
 import ReactDOM from "react-dom";
 
 import config from "./config";
@@ -112,10 +112,14 @@ export const EXITING = "exiting";
  * When `in` is `false` the same thing happens except the state moves from
  * `'exiting'` to `'exited'`.
  */
-class Transition extends React.Component {
+class Transition<
+	RefElement extends undefined | HTMLElement,
+> extends React.Component<TransitionProps<RefElement>, TransitionStates> {
 	static contextType = TransitionGroupContext;
 
-	constructor(props, context) {
+	appearStatus: TransitionStatus | null;
+
+	constructor(props: TransitionProps<RefElement>, context) {
 		super(props, context);
 
 		let parentGroup = context;
@@ -123,7 +127,7 @@ class Transition extends React.Component {
 		let appear =
 			parentGroup && !parentGroup.isMounting ? props.enter : props.appear;
 
-		let initialStatus;
+		let initialStatus: TransitionStatus;
 
 		this.appearStatus = null;
 
@@ -178,7 +182,7 @@ class Transition extends React.Component {
 		this.updateStatus(true, this.appearStatus);
 	}
 
-	componentDidUpdate(prevProps) {
+	componentDidUpdate(prevProps: TransitionProps<RefElement>) {
 		let nextStatus = null;
 		if (prevProps !== this.props) {
 			const { status } = this.state;
@@ -202,11 +206,11 @@ class Transition extends React.Component {
 
 	getTimeouts() {
 		const { timeout } = this.props;
-		let exit, enter, appear;
+		let exit: TransitionTimeout, enter: TransitionTimeout, appear: TransitionTimeout;
 
 		exit = enter = appear = timeout;
 
-		if (timeout != null && typeof timeout !== "number") {
+		if (timeout !== null && typeof timeout !== "number") {
 			exit = timeout.exit;
 			enter = timeout.enter;
 			// TODO: remove fallback for next major
@@ -394,9 +398,51 @@ class Transition extends React.Component {
 			</TransitionGroupContext.Provider>
 		);
 	}
+
+	static defaultProps = {
+		in: false,
+		mountOnEnter: false,
+		unmountOnExit: false,
+		appear: false,
+		enter: true,
+		exit: true,
+
+		onEnter: noop,
+		onEntering: noop,
+		onEntered: noop,
+
+		onExit: noop,
+		onExiting: noop,
+		onExited: noop,
+	};
+
+	static UNMOUNTED = UNMOUNTED;
+	static EXITED = EXITED;
+	static ENTERING = ENTERING;
+	static ENTERED = ENTERED;
+	static EXITING = EXITING;
 }
 
-Transition.propTypes = {
+export type TransitionStatus = typeof ENTERING | typeof ENTERED | typeof EXITING | typeof EXITED | typeof UNMOUNTED;
+export type TransitionChildren =
+	| ReactNode
+	| ((status: TransitionStatus, childProps?: Record<string, unknown>) => ReactNode);
+
+export type EndHandler = (node: HTMLElement, done: () => void) => void;
+
+export type EnterHandler = (node: HTMLElement, isAppearing: boolean) => void;
+
+export type ExitHandler = (node: HTMLElement) => void;
+
+export type TransitionTimeout =
+	| number
+	| { enter?: number; exit?: number; appear?: number };
+
+interface TransitionStates {
+	status: TransitionStatus;
+}
+
+export interface TransitionProps<RefElement extends undefined | HTMLElement> {
 	/**
 	 * A React reference to the DOM element that needs to transition:
 	 * https://stackoverflow.com/a/51127130/4671932
@@ -411,20 +457,7 @@ Transition.propTypes = {
 	 *     (see
 	 *     [test/CSSTransition-test.js](https://github.com/reactjs/react-transition-group/blob/13435f897b3ab71f6e19d724f145596f5910581c/test/CSSTransition-test.js#L362-L437)).
 	 */
-	nodeRef: PropTypes.shape({
-		current:
-			typeof Element === "undefined"
-				? PropTypes.any
-				: (propValue, key, componentName, location, propFullName, secret) => {
-						const value = propValue[key];
-
-						return PropTypes.instanceOf(
-							value && "ownerDocument" in value
-								? value.ownerDocument.defaultView.Element
-								: Element,
-						)(propValue, key, componentName, location, propFullName, secret);
-				  },
-	}),
+	nodeRef?: React.Ref<RefElement>;
 
 	/**
 	 * A `function` child can be used instead of a React element. This function is
@@ -440,15 +473,12 @@ Transition.propTypes = {
 	 * </Transition>
 	 * ```
 	 */
-	children: PropTypes.oneOfType([
-		PropTypes.func.isRequired,
-		PropTypes.element.isRequired,
-	]).isRequired,
+	children?: TransitionChildren;
 
 	/**
 	 * Show the component; triggers the enter or exit states
 	 */
-	in: PropTypes.bool,
+	in?: boolean;
 
 	/**
 	 * By default the child component is mounted immediately along with
@@ -456,13 +486,13 @@ Transition.propTypes = {
 	 * first `in={true}` you can set `mountOnEnter`. After the first enter transition the component will stay
 	 * mounted, even on "exited", unless you also specify `unmountOnExit`.
 	 */
-	mountOnEnter: PropTypes.bool,
+	mountOnEnter?: boolean;
 
 	/**
 	 * By default the child component stays mounted after it reaches the `'exited'` state.
 	 * Set `unmountOnExit` if you'd prefer to unmount the component after it finishes exiting.
 	 */
-	unmountOnExit: PropTypes.bool,
+	unmountOnExit?: boolean;
 
 	/**
 	 * By default the child component does not perform the enter transition when
@@ -475,17 +505,17 @@ Transition.propTypes = {
 	 * > additional `.appear-*` classes, that way you can choose to style it
 	 * > differently.
 	 */
-	appear: PropTypes.bool,
+	appear?: boolean;
 
 	/**
 	 * Enable or disable enter transitions.
 	 */
-	enter: PropTypes.bool,
+	enter?: boolean;
 
 	/**
 	 * Enable or disable exit transitions.
 	 */
-	exit: PropTypes.bool,
+	exit?: boolean;
 
 	/**
 	 * The duration of the transition, in milliseconds.
@@ -513,11 +543,7 @@ Transition.propTypes = {
 	 *
 	 * @type {number | { enter?: number, exit?: number, appear?: number }}
 	 */
-	timeout: (props, ...args) => {
-		let pt = timeoutsShape;
-		if (!props.addEndListener) pt = pt.isRequired;
-		return pt(props, ...args);
-	},
+	timeout?: TransitionTimeout;
 
 	/**
 	 * Add a custom transition end trigger. Called with the transitioning
@@ -533,7 +559,7 @@ Transition.propTypes = {
 	 * }}
 	 * ```
 	 */
-	addEndListener: PropTypes.func,
+	addEndListener?: EndHandler;
 
 	/**
 	 * Callback fired before the "entering" status is applied. An extra parameter
@@ -543,7 +569,7 @@ Transition.propTypes = {
 	 *
 	 * @type Function(node: HtmlElement, isAppearing: bool) -> void
 	 */
-	onEnter: PropTypes.func,
+	onEnter?: EnterHandler;
 
 	/**
 	 * Callback fired after the "entering" status is applied. An extra parameter
@@ -553,7 +579,7 @@ Transition.propTypes = {
 	 *
 	 * @type Function(node: HtmlElement, isAppearing: bool)
 	 */
-	onEntering: PropTypes.func,
+	onEntering?: EnterHandler;
 
 	/**
 	 * Callback fired after the "entered" status is applied. An extra parameter
@@ -563,7 +589,7 @@ Transition.propTypes = {
 	 *
 	 * @type Function(node: HtmlElement, isAppearing: bool) -> void
 	 */
-	onEntered: PropTypes.func,
+	onEntered?: EnterHandler;
 
 	/**
 	 * Callback fired before the "exiting" status is applied.
@@ -572,7 +598,7 @@ Transition.propTypes = {
 	 *
 	 * @type Function(node: HtmlElement) -> void
 	 */
-	onExit: PropTypes.func,
+	onExit?: ExitHandler;
 
 	/**
 	 * Callback fired after the "exiting" status is applied.
@@ -581,7 +607,7 @@ Transition.propTypes = {
 	 *
 	 * @type Function(node: HtmlElement) -> void
 	 */
-	onExiting: PropTypes.func,
+	onExiting?: ExitHandler;
 
 	/**
 	 * Callback fired after the "exited" status is applied.
@@ -590,33 +616,10 @@ Transition.propTypes = {
 	 *
 	 * @type Function(node: HtmlElement) -> void
 	 */
-	onExited: PropTypes.func,
-};
+	onExited?: ExitHandler;
+}
 
 // Name the function so it is clearer in the documentation
 function noop() {}
-
-Transition.defaultProps = {
-	in: false,
-	mountOnEnter: false,
-	unmountOnExit: false,
-	appear: false,
-	enter: true,
-	exit: true,
-
-	onEnter: noop,
-	onEntering: noop,
-	onEntered: noop,
-
-	onExit: noop,
-	onExiting: noop,
-	onExited: noop,
-};
-
-Transition.UNMOUNTED = UNMOUNTED;
-Transition.EXITED = EXITED;
-Transition.ENTERING = ENTERING;
-Transition.ENTERED = ENTERED;
-Transition.EXITING = EXITING;
 
 export default Transition;
