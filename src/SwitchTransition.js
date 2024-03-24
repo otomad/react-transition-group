@@ -1,19 +1,19 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { ENTERED, ENTERING, EXITING } from './Transition';
-import TransitionGroupContext from './TransitionGroupContext';
+import React from "react";
+import PropTypes from "prop-types";
+import { ENTERED, ENTERING, EXITING } from "./Transition";
+import TransitionGroupContext from "./TransitionGroupContext";
 
 function areChildrenDifferent(oldChildren, newChildren) {
-  if (oldChildren === newChildren) return false;
-  if (
-    React.isValidElement(oldChildren) &&
-    React.isValidElement(newChildren) &&
-    oldChildren.key != null &&
-    oldChildren.key === newChildren.key
-  ) {
-    return false;
-  }
-  return true;
+	if (oldChildren === newChildren) return false;
+	if (
+		React.isValidElement(oldChildren) &&
+		React.isValidElement(newChildren) &&
+		oldChildren.key != null &&
+		oldChildren.key === newChildren.key
+	) {
+		return false;
+	}
+	return true;
 }
 
 /**
@@ -21,55 +21,55 @@ function areChildrenDifferent(oldChildren, newChildren) {
  * @enum { string }
  */
 export const modes = {
-  out: 'out-in',
-  in: 'in-out',
+	out: "out-in",
+	in: "in-out",
 };
 
 const callHook =
-  (element, name, cb) =>
-  (...args) => {
-    element.props[name] && element.props[name](...args);
-    cb();
-  };
+	(element, name, cb) =>
+	(...args) => {
+		element.props[name] && element.props[name](...args);
+		cb();
+	};
 
 const leaveRenders = {
-  [modes.out]: ({ current, changeState }) =>
-    React.cloneElement(current, {
-      in: false,
-      onExited: callHook(current, 'onExited', () => {
-        changeState(ENTERING, null);
-      }),
-    }),
-  [modes.in]: ({ current, changeState, children }) => [
-    current,
-    React.cloneElement(children, {
-      in: true,
-      onEntered: callHook(children, 'onEntered', () => {
-        changeState(ENTERING);
-      }),
-    }),
-  ],
+	[modes.out]: ({ current, changeState }) =>
+		React.cloneElement(current, {
+			in: false,
+			onExited: callHook(current, "onExited", () => {
+				changeState(ENTERING, null);
+			}),
+		}),
+	[modes.in]: ({ current, changeState, children }) => [
+		current,
+		React.cloneElement(children, {
+			in: true,
+			onEntered: callHook(children, "onEntered", () => {
+				changeState(ENTERING);
+			}),
+		}),
+	],
 };
 
 const enterRenders = {
-  [modes.out]: ({ children, changeState }) =>
-    React.cloneElement(children, {
-      in: true,
-      onEntered: callHook(children, 'onEntered', () => {
-        changeState(ENTERED, React.cloneElement(children, { in: true }));
-      }),
-    }),
-  [modes.in]: ({ current, children, changeState }) => [
-    React.cloneElement(current, {
-      in: false,
-      onExited: callHook(current, 'onExited', () => {
-        changeState(ENTERED, React.cloneElement(children, { in: true }));
-      }),
-    }),
-    React.cloneElement(children, {
-      in: true,
-    }),
-  ],
+	[modes.out]: ({ children, changeState }) =>
+		React.cloneElement(children, {
+			in: true,
+			onEntered: callHook(children, "onEntered", () => {
+				changeState(ENTERED, React.cloneElement(children, { in: true }));
+			}),
+		}),
+	[modes.in]: ({ current, children, changeState }) => [
+		React.cloneElement(current, {
+			in: false,
+			onExited: callHook(current, "onExited", () => {
+				changeState(ENTERED, React.cloneElement(children, { in: true }));
+			}),
+		}),
+		React.cloneElement(children, {
+			in: true,
+		}),
+	],
 };
 
 /**
@@ -129,94 +129,94 @@ const enterRenders = {
  * ```
  */
 class SwitchTransition extends React.Component {
-  state = {
-    status: ENTERED,
-    current: null,
-  };
+	state = {
+		status: ENTERED,
+		current: null,
+	};
 
-  appeared = false;
+	appeared = false;
 
-  componentDidMount() {
-    this.appeared = true;
-  }
+	componentDidMount() {
+		this.appeared = true;
+	}
 
-  static getDerivedStateFromProps(props, state) {
-    if (props.children == null) {
-      return {
-        current: null,
-      };
-    }
+	static getDerivedStateFromProps(props, state) {
+		if (props.children == null) {
+			return {
+				current: null,
+			};
+		}
 
-    if (state.status === ENTERING && props.mode === modes.in) {
-      return {
-        status: ENTERING,
-      };
-    }
+		if (state.status === ENTERING && props.mode === modes.in) {
+			return {
+				status: ENTERING,
+			};
+		}
 
-    if (state.current && areChildrenDifferent(state.current, props.children)) {
-      return {
-        status: EXITING,
-      };
-    }
+		if (state.current && areChildrenDifferent(state.current, props.children)) {
+			return {
+				status: EXITING,
+			};
+		}
 
-    return {
-      current: React.cloneElement(props.children, {
-        in: true,
-      }),
-    };
-  }
+		return {
+			current: React.cloneElement(props.children, {
+				in: true,
+			}),
+		};
+	}
 
-  changeState = (status, current = this.state.current) => {
-    this.setState({
-      status,
-      current,
-    });
-  };
+	changeState = (status, current = this.state.current) => {
+		this.setState({
+			status,
+			current,
+		});
+	};
 
-  render() {
-    const {
-      props: { children, mode },
-      state: { status, current },
-    } = this;
+	render() {
+		const {
+			props: { children, mode },
+			state: { status, current },
+		} = this;
 
-    const data = { children, current, changeState: this.changeState, status };
-    let component;
-    switch (status) {
-      case ENTERING:
-        component = enterRenders[mode](data);
-        break;
-      case EXITING:
-        component = leaveRenders[mode](data);
-        break;
-      case ENTERED:
-        component = current;
-    }
+		const data = { children, current, changeState: this.changeState, status };
+		let component;
+		switch (status) {
+			case ENTERING:
+				component = enterRenders[mode](data);
+				break;
+			case EXITING:
+				component = leaveRenders[mode](data);
+				break;
+			case ENTERED:
+				component = current;
+		}
 
-    return (
-      <TransitionGroupContext.Provider value={{ isMounting: !this.appeared }}>
-        {component}
-      </TransitionGroupContext.Provider>
-    );
-  }
+		return (
+			<TransitionGroupContext.Provider value={{ isMounting: !this.appeared }}>
+				{component}
+			</TransitionGroupContext.Provider>
+		);
+	}
 }
 
 SwitchTransition.propTypes = {
-  /**
-   * Transition modes.
-   * `out-in`: Current element transitions out first, then when complete, the new element transitions in.
-   * `in-out`: New element transitions in first, then when complete, the current element transitions out.
-   *
-   * @type {'out-in'|'in-out'}
-   */
-  mode: PropTypes.oneOf([modes.in, modes.out]),
-  /**
-   * Any `Transition` or `CSSTransition` component.
-   */
-  children: PropTypes.oneOfType([PropTypes.element.isRequired]),
+	/**
+	 * Transition modes.
+	 * `out-in`: Current element transitions out first, then when complete, the new element transitions in.
+	 * `in-out`: New element transitions in first, then when complete, the current element transitions out.
+	 *
+	 * @type {'out-in'|'in-out'}
+	 */
+	mode: PropTypes.oneOf([modes.in, modes.out]),
+	/**
+	 * Any `Transition` or `CSSTransition` component.
+	 */
+	children: PropTypes.oneOfType([PropTypes.element.isRequired]),
 };
 
 SwitchTransition.defaultProps = {
-  mode: modes.out,
+	mode: modes.out,
 };
 
 export default SwitchTransition;
