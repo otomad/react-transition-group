@@ -1,6 +1,5 @@
 import React from "react";
 import type { ReactElement, ReactNode } from "react";
-import PropTypes from "prop-types";
 import { ENTERED, ENTERING, EXITING, type TransitionStatus } from "./Transition";
 import TransitionGroupContext from "./TransitionGroupContext";
 

@@ -1,8 +1,7 @@
-import PropTypes from "prop-types";
 import React from "react";
 import ReactDOM from "react-dom";
 import TransitionGroup from "./TransitionGroup";
-import type { TransitionEventProps, TransitionProps } from "./Transition";
+import type { TransitionEventProps } from "./Transition";
 
 /**
  * The `<ReplaceTransition>` component is a specialized `Transition` component

@@ -132,10 +132,9 @@ class TransitionComponent extends React.Component<
 	}
 
 	private get node() {
-		return (
-			this.props.nodeRef?.current ??
-			(ReactDOM.findDOMNode(this) as HTMLElement)
-		);
+		return this.props.nodeRef
+			? this.props.nodeRef.current
+			: (ReactDOM.findDOMNode(this) as HTMLElement);
 	}
 
 	private updateStatus(

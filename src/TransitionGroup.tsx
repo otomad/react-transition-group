@@ -1,4 +1,3 @@
-import PropTypes from "prop-types";
 import React, { useRef } from "react";
 import type { ContextType, ReactElement, ReactNode } from "react";
 import TransitionGroupContext from "./TransitionGroupContext";

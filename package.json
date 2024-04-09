@@ -16,7 +16,9 @@
 		"build:esm": "cross-env BABEL_ENV=esm babel src --out-dir lib/esm",
 		"build:pick": "cherry-pick --cwd=lib --input-dir=../src --cjs-dir=cjs --esm-dir=esm",
 		"build:dist": "cross-env BABEL_ENV=esm rollup -c",
+		"build:tsc": "npm run clean && tsc --build",
 		"bootstrap": "yarn && yarn --cwd www",
+		"clean": "rimraf ./lib/dist",
 		"fix": "run-s fix:eslint fix:prettier",
 		"fix:eslint": "yarn lint:eslint --fix",
 		"fix:prettier": "yarn lint:prettier --write",
@@ -29,7 +31,8 @@
 		"start": "yarn --cwd www run develop",
 		"storybook": "start-storybook -p 6006",
 		"build-storybook": "build-storybook",
-		"semantic-release": "semantic-release"
+		"semantic-release": "semantic-release",
+		"rimraf": "./node_modules/rimraf/bin.js"
 	},
 	"repository": {
 		"type": "git",
