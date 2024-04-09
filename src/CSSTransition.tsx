@@ -1,11 +1,7 @@
-import PropTypes from "prop-types";
-// import addOneClass from "dom-helpers/addClass";
-// import removeOneClass from "dom-helpers/removeClass";
 import React, { useRef } from "react";
 
 import TransitionComponent from "./Transition";
 import type { EnterHandler, ExitHandler, TransitionProps } from "./Transition";
-import { classNamesShape } from "./utils/PropTypes";
 import { forceReflow } from "./utils/reflow";
 import functionModule from "./utils/functionModule";
 import { cloneRef, endListener } from "./utils/cloneRef";
@@ -425,7 +421,7 @@ const CSSTransition = functionModule(
 		return (
 			<CSSTransitionComponent
 				{...props}
-				{...(props.timeout !== undefined
+				{...(props.timeout != null
 					? { timeout: props.timeout }
 					: { nodeRef, addEndListener: endListener() })}
 			>

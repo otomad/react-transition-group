@@ -2,8 +2,8 @@
 	"name": "react-transition-group",
 	"version": "4.4.5",
 	"description": "A react component toolset for managing animations",
-	"main": "lib/dist/react-transition-group.js",
-	"module": "lib/dist/react-transition-group.js",
+	"main": "lib/dist/index.js",
+	"module": "lib/dist/index.js",
 	"types": "lib/dist/types/index.d.ts",
 	"type": "module",
 	"scripts": {

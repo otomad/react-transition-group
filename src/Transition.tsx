@@ -1,10 +1,8 @@
-import PropTypes from "prop-types";
 import React, { useRef } from "react";
 import type { ContextType, ReactNode } from "react";
 import ReactDOM from "react-dom";
 
 import config from "./config";
-import { timeoutsShape } from "./utils/PropTypes";
 import TransitionGroupContext from "./TransitionGroupContext";
 import { forceReflow } from "./utils/reflow";
 import { cloneRef, endListener } from "./utils/cloneRef";
@@ -124,7 +122,7 @@ class TransitionComponent extends React.Component<
 
 		exit = enter = appear = timeout as number;
 
-		if (timeout !== null && typeof timeout !== "number") {
+		if (timeout != null && typeof timeout !== "number") {
 			exit = timeout.exit;
 			enter = timeout.enter;
 			// TODO: remove fallback for next major
@@ -328,6 +326,7 @@ class TransitionComponent extends React.Component<
 		appear: false,
 		enter: true,
 		exit: true,
+		timeout: null,
 
 		onEnter: noop,
 		onEntering: noop,
@@ -672,7 +671,7 @@ const Transition = functionModule(
 		return (
 			<TransitionComponent
 				{...props}
-				{...(props.timeout !== undefined
+				{...(props.timeout != null
 					? { timeout: props.timeout }
 					: { nodeRef, addEndListener: endListener() })}
 			>
