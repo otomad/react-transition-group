@@ -1,11 +1,14 @@
 import PropTypes from "prop-types";
-import React, { type ReactNode } from "react";
+import React, { useRef } from "react";
+import type { ContextType, ReactNode } from "react";
 import ReactDOM from "react-dom";
 
 import config from "./config";
 import { timeoutsShape } from "./utils/PropTypes";
 import TransitionGroupContext from "./TransitionGroupContext";
 import { forceReflow } from "./utils/reflow";
+import { cloneRef, endListener } from "./utils/cloneRef";
+import functionModule from "./utils/functionModule";
 
 export const UNMOUNTED = "unmounted";
 export const EXITED = "exited";
@@ -13,113 +16,23 @@ export const ENTERING = "entering";
 export const ENTERED = "entered";
 export const EXITING = "exiting";
 
-/**
- * The Transition component lets you describe a transition from one component
- * state to another _over time_ with a simple declarative API. Most commonly
- * it's used to animate the mounting and unmounting of a component, but can also
- * be used to describe in-place transition states as well.
- *
- * ---
- *
- * **Note**: `Transition` is a platform-agnostic base component. If you're using
- * transitions in CSS, you'll probably want to use
- * [`CSSTransition`](https://reactcommunity.org/react-transition-group/css-transition)
- * instead. It inherits all the features of `Transition`, but contains
- * additional features necessary to play nice with CSS transitions (hence the
- * name of the component).
- *
- * ---
- *
- * By default the `Transition` component does not alter the behavior of the
- * component it renders, it only tracks "enter" and "exit" states for the
- * components. It's up to you to give meaning and effect to those states. For
- * example we can add styles to a component when it enters or exits:
- *
- * ```jsx
- * import { Transition } from 'react-transition-group';
- * import { useRef } from 'react';
- *
- * const duration = 300;
- *
- * const defaultStyle = {
- *   transition: `opacity ${duration}ms ease-in-out`,
- *   opacity: 0,
- * }
- *
- * const transitionStyles = {
- *   entering: { opacity: 1 },
- *   entered:  { opacity: 1 },
- *   exiting:  { opacity: 0 },
- *   exited:  { opacity: 0 },
- * };
- *
- * function Fade({ in: inProp }) {
- *   const nodeRef = useRef(null);
- *   return (
- *     <Transition nodeRef={nodeRef} in={inProp} timeout={duration}>
- *       {state => (
- *         <div ref={nodeRef} style={{
- *           ...defaultStyle,
- *           ...transitionStyles[state]
- *         }}>
- *           I'm a fade Transition!
- *         </div>
- *       )}
- *     </Transition>
- *   );
- * }
- * ```
- *
- * There are 4 main states a Transition can be in:
- *  - `'entering'`
- *  - `'entered'`
- *  - `'exiting'`
- *  - `'exited'`
- *
- * Transition state is toggled via the `in` prop. When `true` the component
- * begins the "Enter" stage. During this stage, the component will shift from
- * its current transition state, to `'entering'` for the duration of the
- * transition and then to the `'entered'` stage once it's complete. Let's take
- * the following example (we'll use the
- * [useState](https://reactjs.org/docs/hooks-reference.html#usestate) hook):
- *
- * ```jsx
- * import { Transition } from 'react-transition-group';
- * import { useState, useRef } from 'react';
- *
- * function App() {
- *   const [inProp, setInProp] = useState(false);
- *   const nodeRef = useRef(null);
- *   return (
- *     <div>
- *       <Transition nodeRef={nodeRef} in={inProp} timeout={500}>
- *         {state => (
- *           // ...
- *         )}
- *       </Transition>
- *       <button onClick={() => setInProp(true)}>
- *         Click to Enter
- *       </button>
- *     </div>
- *   );
- * }
- * ```
- *
- * When the button is clicked the component will shift to the `'entering'` state
- * and stay there for 500ms (the value of `timeout`) before it finally switches
- * to `'entered'`.
- *
- * When `in` is `false` the same thing happens except the state moves from
- * `'exiting'` to `'exited'`.
- */
-class Transition<
-	RefElement extends undefined | HTMLElement,
-> extends React.Component<TransitionProps<RefElement>, TransitionStates> {
+class TransitionComponent extends React.Component<
+	TransitionProps,
+	TransitionStates
+> {
 	static contextType = TransitionGroupContext;
 
-	appearStatus: TransitionStatus | null;
+	private appearStatus: TransitionStatus | null;
 
-	constructor(props: TransitionProps<RefElement>, context) {
+	private nextCallback: {
+		(event: any): void;
+		cancel: () => void;
+	} | null = null;
+
+	constructor(
+		props: TransitionProps,
+		context: ContextType<typeof TransitionGroupContext>,
+	) {
 		super(props, context);
 
 		let parentGroup = context;
@@ -147,11 +60,12 @@ class Transition<
 		}
 
 		this.state = { status: initialStatus };
-
-		this.nextCallback = null;
 	}
 
-	static getDerivedStateFromProps({ in: nextIn }, prevState) {
+	private static getDerivedStateFromProps(
+		{ in: nextIn }: TransitionProps,
+		prevState: TransitionStates,
+	) {
 		if (nextIn && prevState.status === UNMOUNTED) {
 			return { status: EXITED };
 		}
@@ -182,7 +96,7 @@ class Transition<
 		this.updateStatus(true, this.appearStatus);
 	}
 
-	componentDidUpdate(prevProps: TransitionProps<RefElement>) {
+	componentDidUpdate(prevProps: TransitionProps) {
 		let nextStatus = null;
 		if (prevProps !== this.props) {
 			const { status } = this.state;
@@ -204,11 +118,11 @@ class Transition<
 		this.cancelNextCallback();
 	}
 
-	getTimeouts() {
+	private get timeouts() {
 		const { timeout } = this.props;
-		let exit: TransitionTimeout, enter: TransitionTimeout, appear: TransitionTimeout;
+		let exit: number, enter: number, appear: number;
 
-		exit = enter = appear = timeout;
+		exit = enter = appear = timeout as number;
 
 		if (timeout !== null && typeof timeout !== "number") {
 			exit = timeout.exit;
@@ -219,19 +133,27 @@ class Transition<
 		return { exit, enter, appear };
 	}
 
-	updateStatus(mounting = false, nextStatus) {
+	private get node() {
+		return (
+			this.props.nodeRef?.current ??
+			(ReactDOM.findDOMNode(this) as HTMLElement)
+		);
+	}
+
+	private updateStatus(
+		mounting = false,
+		nextStatus: TransitionStatus | null,
+	) {
 		if (nextStatus !== null) {
 			// nextStatus will always be ENTERING or EXITING.
 			this.cancelNextCallback();
 
 			if (nextStatus === ENTERING) {
 				if (this.props.unmountOnExit || this.props.mountOnEnter) {
-					const node = this.props.nodeRef
-						? this.props.nodeRef.current
-						: ReactDOM.findDOMNode(this);
+					const node = this.node;
 					// https://github.com/reactjs/react-transition-group/pull/749
 					// With unmountOnExit or mountOnEnter, the enter animation should happen at the transition between `exited` and `entering`.
-					// To make the animation happen,  we have to separate each rendering and avoid being processed as batched.
+					// To make the animation happen, we have to separate each rendering and avoid being processed as batched.
 					if (node) forceReflow(node);
 				}
 				this.performEnter(mounting);
@@ -243,73 +165,72 @@ class Transition<
 		}
 	}
 
-	performEnter(mounting) {
+	private performEnter(mounting: boolean) {
 		const { enter } = this.props;
-		const appearing = this.context ? this.context.isMounting : mounting;
-		const [maybeNode, maybeAppearing] = this.props.nodeRef
-			? [appearing]
-			: [ReactDOM.findDOMNode(this), appearing];
+		const context = this.context as ContextType<
+			typeof TransitionGroupContext
+		>;
+		const appearing = context ? context.isMounting : mounting;
+		const node = this.node;
 
-		const timeouts = this.getTimeouts();
+		const timeouts = this.timeouts;
 		const enterTimeout = appearing ? timeouts.appear : timeouts.enter;
 		// no enter animation skip right to ENTERED
 		// if we are mounting and running this it means appear _must_ be set
 		if ((!mounting && !enter) || config.disabled) {
 			this.safeSetState({ status: ENTERED }, () => {
-				this.props.onEntered(maybeNode);
+				this.props.onEntered(node);
 			});
 			return;
 		}
 
-		this.props.onEnter(maybeNode, maybeAppearing);
+		this.props.onEnter(node, appearing);
 
 		this.safeSetState({ status: ENTERING }, () => {
-			this.props.onEntering(maybeNode, maybeAppearing);
+			this.props.onEntering(node, appearing);
 
 			this.onTransitionEnd(enterTimeout, () => {
 				this.safeSetState({ status: ENTERED }, () => {
-					this.props.onEntered(maybeNode, maybeAppearing);
+					this.props.onEntered(node, appearing);
 				});
 			});
 		});
 	}
 
-	performExit() {
+	private performExit() {
 		const { exit } = this.props;
-		const timeouts = this.getTimeouts();
-		const maybeNode = this.props.nodeRef
-			? undefined
-			: ReactDOM.findDOMNode(this);
+		const timeouts = this.timeouts;
+		const node = this.node;
 
 		// no exit animation skip right to EXITED
 		if (!exit || config.disabled) {
 			this.safeSetState({ status: EXITED }, () => {
-				this.props.onExited(maybeNode);
+				this.props.onExited(node);
 			});
 			return;
 		}
 
-		this.props.onExit(maybeNode);
+		this.props.onExit(node);
 
 		this.safeSetState({ status: EXITING }, () => {
-			this.props.onExiting(maybeNode);
+			this.props.onExiting(node);
 
 			this.onTransitionEnd(timeouts.exit, () => {
 				this.safeSetState({ status: EXITED }, () => {
-					this.props.onExited(maybeNode);
+					this.props.onExited(node);
 				});
 			});
 		});
 	}
 
-	cancelNextCallback() {
+	private cancelNextCallback() {
 		if (this.nextCallback !== null) {
 			this.nextCallback.cancel();
 			this.nextCallback = null;
 		}
 	}
 
-	safeSetState(nextState, callback) {
+	private safeSetState(nextState: TransitionStates, callback) {
 		// This shouldn't be necessary, but there are weird race conditions with
 		// setState callbacks and unmounting in testing, so always make sure that
 		// we can cancel any pending setState callbacks after we unmount.
@@ -317,10 +238,10 @@ class Transition<
 		this.setState(nextState, callback);
 	}
 
-	setNextCallback(callback) {
+	private setNextCallback(callback: (event: any) => void) {
 		let active = true;
 
-		this.nextCallback = (event) => {
+		const nextCallback = (event: any) => {
 			if (active) {
 				active = false;
 				this.nextCallback = null;
@@ -329,18 +250,16 @@ class Transition<
 			}
 		};
 
-		this.nextCallback.cancel = () => {
+		nextCallback.cancel = () => {
 			active = false;
 		};
 
-		return this.nextCallback;
+		return (this.nextCallback = nextCallback);
 	}
 
-	onTransitionEnd(timeout, handler) {
+	private onTransitionEnd(timeout: number, handler: () => void) {
 		this.setNextCallback(handler);
-		const node = this.props.nodeRef
-			? this.props.nodeRef.current
-			: ReactDOM.findDOMNode(this);
+		const node = this.node;
 
 		const doesNotHaveTimeoutOrListener =
 			timeout == null && !this.props.addEndListener;
@@ -350,10 +269,10 @@ class Transition<
 		}
 
 		if (this.props.addEndListener) {
-			const [maybeNode, maybeNextCallback] = this.props.nodeRef
-				? [this.nextCallback]
-				: [node, this.nextCallback];
-			this.props.addEndListener(maybeNode, maybeNextCallback);
+			this.props.addEndListener(
+				node,
+				this.nextCallback as unknown as () => void,
+			);
 		}
 
 		if (timeout != null) {
@@ -394,7 +313,10 @@ class Transition<
 			<TransitionGroupContext.Provider value={null}>
 				{typeof children === "function"
 					? children(status, childProps)
-					: React.cloneElement(React.Children.only(children), childProps)}
+					: React.cloneElement(
+							React.Children.only(children as React.ReactElement),
+							childProps,
+					  )}
 			</TransitionGroupContext.Provider>
 		);
 	}
@@ -423,14 +345,22 @@ class Transition<
 	static EXITING = EXITING;
 }
 
-export type TransitionStatus = typeof ENTERING | typeof ENTERED | typeof EXITING | typeof EXITED | typeof UNMOUNTED;
+export type TransitionStatus =
+	| typeof ENTERING
+	| typeof ENTERED
+	| typeof EXITING
+	| typeof EXITED
+	| typeof UNMOUNTED;
 export type TransitionChildren =
 	| ReactNode
-	| ((status: TransitionStatus, childProps?: Record<string, unknown>) => ReactNode);
+	| ((
+			status: TransitionStatus,
+			childProps?: Record<string, unknown>,
+	  ) => ReactNode);
 
 export type EndHandler = (node: HTMLElement, done: () => void) => void;
 
-export type EnterHandler = (node: HTMLElement, isAppearing: boolean) => void;
+export type EnterHandler = (node: HTMLElement, isAppearing?: boolean) => void;
 
 export type ExitHandler = (node: HTMLElement) => void;
 
@@ -442,7 +372,7 @@ interface TransitionStates {
 	status: TransitionStatus;
 }
 
-export interface TransitionProps<RefElement extends undefined | HTMLElement> {
+export interface TransitionProps {
 	/**
 	 * A React reference to the DOM element that needs to transition:
 	 * https://stackoverflow.com/a/51127130/4671932
@@ -457,7 +387,7 @@ export interface TransitionProps<RefElement extends undefined | HTMLElement> {
 	 *     (see
 	 *     [test/CSSTransition-test.js](https://github.com/reactjs/react-transition-group/blob/13435f897b3ab71f6e19d724f145596f5910581c/test/CSSTransition-test.js#L362-L437)).
 	 */
-	nodeRef?: React.RefObject<RefElement>;
+	nodeRef?: React.RefObject<HTMLElement | null | undefined>;
 
 	/**
 	 * A `function` child can be used instead of a React element. This function is
@@ -619,7 +549,140 @@ export interface TransitionProps<RefElement extends undefined | HTMLElement> {
 	onExited?: ExitHandler;
 }
 
+type TransitionEventPropKeys = {
+	[prop in keyof TransitionProps as string]: prop extends `on${string}`
+		? prop
+		: never;
+}[string];
+export type TransitionEventProps = {
+	[prop in TransitionEventPropKeys]?: TransitionProps[prop];
+};
+
 // Name the function so it is clearer in the documentation
 function noop() {}
+
+/**
+ * The Transition component lets you describe a transition from one component
+ * state to another _over time_ with a simple declarative API. Most commonly
+ * it's used to animate the mounting and unmounting of a component, but can also
+ * be used to describe in-place transition states as well.
+ *
+ * ---
+ *
+ * **Note**: `Transition` is a platform-agnostic base component. If you're using
+ * transitions in CSS, you'll probably want to use
+ * [`CSSTransition`](https://reactcommunity.org/react-transition-group/css-transition)
+ * instead. It inherits all the features of `Transition`, but contains
+ * additional features necessary to play nice with CSS transitions (hence the
+ * name of the component).
+ *
+ * ---
+ *
+ * By default the `Transition` component does not alter the behavior of the
+ * component it renders, it only tracks "enter" and "exit" states for the
+ * components. It's up to you to give meaning and effect to those states. For
+ * example we can add styles to a component when it enters or exits:
+ *
+ * ```jsx
+ * import { Transition } from 'react-transition-group';
+ * import { useRef } from 'react';
+ *
+ * const duration = 300;
+ *
+ * const defaultStyle = {
+ *   transition: `opacity ${duration}ms ease-in-out`,
+ *   opacity: 0,
+ * }
+ *
+ * const transitionStyles = {
+ *   entering: { opacity: 1 },
+ *   entered:  { opacity: 1 },
+ *   exiting:  { opacity: 0 },
+ *   exited:  { opacity: 0 },
+ * };
+ *
+ * function Fade({ in: inProp }) {
+ *   const nodeRef = useRef(null);
+ *   return (
+ *     <Transition nodeRef={nodeRef} in={inProp} timeout={duration}>
+ *       {state => (
+ *         <div ref={nodeRef} style={{
+ *           ...defaultStyle,
+ *           ...transitionStyles[state]
+ *         }}>
+ *           I'm a fade Transition!
+ *         </div>
+ *       )}
+ *     </Transition>
+ *   );
+ * }
+ * ```
+ *
+ * There are 4 main states a Transition can be in:
+ *  - `'entering'`
+ *  - `'entered'`
+ *  - `'exiting'`
+ *  - `'exited'`
+ *
+ * Transition state is toggled via the `in` prop. When `true` the component
+ * begins the "Enter" stage. During this stage, the component will shift from
+ * its current transition state, to `'entering'` for the duration of the
+ * transition and then to the `'entered'` stage once it's complete. Let's take
+ * the following example (we'll use the
+ * [useState](https://reactjs.org/docs/hooks-reference.html#usestate) hook):
+ *
+ * ```jsx
+ * import { Transition } from 'react-transition-group';
+ * import { useState, useRef } from 'react';
+ *
+ * function App() {
+ *   const [inProp, setInProp] = useState(false);
+ *   const nodeRef = useRef(null);
+ *   return (
+ *     <div>
+ *       <Transition nodeRef={nodeRef} in={inProp} timeout={500}>
+ *         {state => (
+ *           // ...
+ *         )}
+ *       </Transition>
+ *       <button onClick={() => setInProp(true)}>
+ *         Click to Enter
+ *       </button>
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * When the button is clicked the component will shift to the `'entering'` state
+ * and stay there for 500ms (the value of `timeout`) before it finally switches
+ * to `'entered'`.
+ *
+ * When `in` is `false` the same thing happens except the state moves from
+ * `'exiting'` to `'exited'`.
+ */
+const Transition = functionModule(
+	React.forwardRef<HTMLElement, TransitionProps>(function Transition(
+		props,
+		ref,
+	) {
+		const nodeRef = useRef<HTMLElement | null>(null);
+
+		React.useImperativeHandle(ref, () => nodeRef.current!, []);
+
+		return (
+			<TransitionComponent
+				{...props}
+				{...(props.timeout !== undefined
+					? { timeout: props.timeout }
+					: { nodeRef, addEndListener: endListener() })}
+			>
+				{cloneRef(props.children as ReactNode, nodeRef)}
+			</TransitionComponent>
+		);
+	}),
+	{
+		Component: TransitionComponent,
+	},
+);
 
 export default Transition;

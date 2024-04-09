@@ -30,7 +30,7 @@ export default [
 		input,
 		output: {
 			file: "./lib/dist/react-transition-group.js",
-			format: "es",
+			format: "esm",
 			name,
 			globals,
 		},

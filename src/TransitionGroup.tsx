@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
-import React from "react";
+import React, { useRef } from "react";
+import type { ContextType, ReactElement, ReactNode } from "react";
 import TransitionGroupContext from "./TransitionGroupContext";
 
 import {
@@ -7,30 +8,18 @@ import {
 	getInitialChildMapping,
 	getNextChildMapping,
 } from "./utils/ChildMapping";
+import functionModule from "./utils/functionModule";
 
-const values = Object.values || ((obj) => Object.keys(obj).map((k) => obj[k]));
+class TransitionGroupComponent extends React.Component<
+	TransitionGroupProps,
+	TransitionGroupState
+> {
+	private mounted: boolean;
 
-const defaultProps = {
-	component: "div",
-	childFactory: (child) => child,
-};
-
-/**
- * The `<TransitionGroup>` component manages a set of transition components
- * (`<Transition>` and `<CSSTransition>`) in a list. Like with the transition
- * components, `<TransitionGroup>` is a state machine for managing the mounting
- * and unmounting of components over time.
- *
- * Consider the example below. As items are removed or added to the TodoList the
- * `in` prop is toggled automatically by the `<TransitionGroup>`.
- *
- * Note that `<TransitionGroup>`  does not define any animation behavior!
- * Exactly _how_ a list item animates is up to the individual transition
- * component. This means you can mix and match animations across different list
- * items.
- */
-class TransitionGroup extends React.Component {
-	constructor(props, context) {
+	constructor(
+		props: TransitionGroupProps,
+		context: ContextType<typeof TransitionGroupContext>,
+	) {
 		super(props, context);
 
 		const handleExited = this.handleExited.bind(this);
@@ -54,21 +43,36 @@ class TransitionGroup extends React.Component {
 		this.mounted = false;
 	}
 
-	static getDerivedStateFromProps(
-		nextProps,
-		{ children: prevChildMapping, handleExited, firstRender },
+	private static getDerivedStateFromProps(
+		nextProps: TransitionGroupProps,
+		{
+			children: prevChildMapping,
+			handleExited,
+			firstRender,
+		}: TransitionGroupState,
 	) {
 		return {
 			children: firstRender
 				? getInitialChildMapping(nextProps, handleExited)
-				: getNextChildMapping(nextProps, prevChildMapping, handleExited),
+				: getNextChildMapping(
+						nextProps,
+						prevChildMapping,
+						handleExited,
+				  ),
 			firstRender: false,
 		};
 	}
 
+	static defaultProps: Partial<TransitionGroupProps> = {
+		component: "div",
+		childFactory: (child) => child,
+	};
+
 	// node is `undefined` when user provided `nodeRef` prop
-	handleExited(child, node) {
-		let currentChildMapping = getChildMapping(this.props.children);
+	handleExited(child: ReactElement, node: HTMLElement) {
+		let currentChildMapping = getChildMapping(
+			this.props.children as ReactElement,
+		);
 
 		if (child.key in currentChildMapping) return;
 
@@ -87,9 +91,14 @@ class TransitionGroup extends React.Component {
 	}
 
 	render() {
-		const { component: Component, childFactory, ...props } = this.props;
+		const {
+			component: Component,
+			childFactory,
+			innerRef,
+			...props
+		} = this.props;
 		const { contextValue } = this.state;
-		const children = values(this.state.children).map(childFactory);
+		const children = Object.values(this.state.children).map(childFactory);
 
 		delete props.appear;
 		delete props.enter;
@@ -104,13 +113,23 @@ class TransitionGroup extends React.Component {
 		}
 		return (
 			<TransitionGroupContext.Provider value={contextValue}>
-				<Component {...props}>{children}</Component>
+				{/* @ts-ignore */}
+				<Component ref={innerRef} {...props}>
+					{children}
+				</Component>
 			</TransitionGroupContext.Provider>
 		);
 	}
 }
 
-TransitionGroup.propTypes = {
+interface TransitionGroupState {
+	contextValue: ContextType<typeof TransitionGroupContext>;
+	handleExited: TransitionGroupComponent["handleExited"];
+	firstRender: boolean;
+	children?: ReactElement;
+}
+
+export interface TransitionGroupProps {
 	/**
 	 * `<TransitionGroup>` renders a `<div>` by default. You can change this
 	 * behavior by providing a `component` prop.
@@ -118,7 +137,7 @@ TransitionGroup.propTypes = {
 	 * you can pass in `component={null}`. This is useful if the wrapping div
 	 * borks your css styles.
 	 */
-	component: PropTypes.any,
+	component?: keyof JSX.IntrinsicElements | null | undefined;
 	/**
 	 * A set of `<Transition>` components, that are toggled `in` and out as they
 	 * leave. the `<TransitionGroup>` will inject specific transition props, so
@@ -132,26 +151,26 @@ TransitionGroup.propTypes = {
 	 * the transition child as you change its content, this will cause
 	 * `TransitionGroup` to transition the child out and back in.
 	 */
-	children: PropTypes.node,
+	children?: ReactNode;
 
 	/**
 	 * A convenience prop that enables or disables appear animations
 	 * for all children. Note that specifying this will override any defaults set
 	 * on individual children Transitions.
 	 */
-	appear: PropTypes.bool,
+	appear?: boolean;
 	/**
 	 * A convenience prop that enables or disables enter animations
 	 * for all children. Note that specifying this will override any defaults set
 	 * on individual children Transitions.
 	 */
-	enter: PropTypes.bool,
+	enter?: boolean;
 	/**
 	 * A convenience prop that enables or disables exit animations
 	 * for all children. Note that specifying this will override any defaults set
 	 * on individual children Transitions.
 	 */
-	exit: PropTypes.bool,
+	exit?: boolean;
 
 	/**
 	 * You may need to apply reactive updates to a child as it is exiting.
@@ -162,10 +181,40 @@ TransitionGroup.propTypes = {
 	 * to wrap every child, even the ones that are leaving.
 	 *
 	 * @type Function(child: ReactElement) -> ReactElement
+	 * @param child - the exiting child element
+	 * @returns the updated child element
 	 */
-	childFactory: PropTypes.func,
-};
+	childFactory?: (child: ReactElement) => ReactElement;
 
-TransitionGroup.defaultProps = defaultProps;
+	/**
+	 * A ref that can be attached to the outer element of the TransitionGroup.
+	 */
+	innerRef?: React.LegacyRef<HTMLElement | null>;
+}
+
+/**
+ * The `<TransitionGroup>` component manages a set of transition components
+ * (`<Transition>` and `<CSSTransition>`) in a list. Like with the transition
+ * components, `<TransitionGroup>` is a state machine for managing the mounting
+ * and unmounting of components over time.
+ *
+ * Consider the example below. As items are removed or added to the TodoList the
+ * `in` prop is toggled automatically by the `<TransitionGroup>`.
+ *
+ * Note that `<TransitionGroup>`  does not define any animation behavior!
+ * Exactly _how_ a list item animates is up to the individual transition
+ * component. This means you can mix and match animations across different list
+ * items.
+ */
+const TransitionGroup = functionModule(
+	React.forwardRef<HTMLElement, Omit<TransitionGroupProps, "innerRef">>(
+		function TransitionGroup(props, ref) {
+			return <TransitionGroupComponent innerRef={ref} {...props} />;
+		},
+	),
+	{
+		Component: TransitionGroupComponent,
+	},
+);
 
 export default TransitionGroup;

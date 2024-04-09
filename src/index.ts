@@ -1,4 +1,4 @@
-export { default as CSSTransition } from "./CSSTransition";
+export { default as CssTransition } from "./CSSTransition";
 export { default as ReplaceTransition } from "./ReplaceTransition";
 export { default as SwitchTransition } from "./SwitchTransition";
 export { default as TransitionGroup } from "./TransitionGroup";

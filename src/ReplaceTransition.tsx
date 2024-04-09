@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import React from "react";
 import ReactDOM from "react-dom";
 import TransitionGroup from "./TransitionGroup";
+import type { TransitionEventProps, TransitionProps } from "./Transition";
 
 /**
  * The `<ReplaceTransition>` component is a specialized `Transition` component
@@ -14,7 +15,7 @@ import TransitionGroup from "./TransitionGroup";
  * </ReplaceTransition>
  * ```
  */
-class ReplaceTransition extends React.Component {
+class ReplaceTransition extends React.Component<ReplaceTransitionProps> {
 	handleEnter = (...args) => this.handleLifecycle("onEnter", 0, args);
 	handleEntering = (...args) => this.handleLifecycle("onEntering", 0, args);
 	handleEntered = (...args) => this.handleLifecycle("onEntered", 0, args);
@@ -23,9 +24,9 @@ class ReplaceTransition extends React.Component {
 	handleExiting = (...args) => this.handleLifecycle("onExiting", 1, args);
 	handleExited = (...args) => this.handleLifecycle("onExited", 1, args);
 
-	handleLifecycle(handler, idx, originalArgs) {
+	private handleLifecycle(handler: string, index: number, originalArgs) {
 		const { children } = this.props;
-		const child = React.Children.toArray(children)[idx];
+		const child = React.Children.toArray(children)[index] as React.ReactElement;
 
 		if (child.props[handler]) child.props[handler](...originalArgs);
 		if (this.props[handler]) {
@@ -39,7 +40,7 @@ class ReplaceTransition extends React.Component {
 
 	render() {
 		const { children, in: inProp, ...props } = this.props;
-		const [first, second] = React.Children.toArray(children);
+		const [first, second] = React.Children.toArray(children) as React.ReactElement[];
 
 		delete props.onEnter;
 		delete props.onEntering;
@@ -68,16 +69,9 @@ class ReplaceTransition extends React.Component {
 	}
 }
 
-ReplaceTransition.propTypes = {
-	in: PropTypes.bool.isRequired,
-	children(props, propName) {
-		if (React.Children.count(props[propName]) !== 2)
-			return new Error(
-				`"${propName}" must be exactly two transition components.`,
-			);
-
-		return null;
-	},
-};
+export interface ReplaceTransitionProps extends TransitionEventProps {
+	in: boolean;
+	children: React.ReactNode;
+}
 
 export default ReplaceTransition;

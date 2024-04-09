@@ -1,4 +1,5 @@
 import { Children, cloneElement, isValidElement } from "react";
+import type { ReactElement } from "react";
 
 /**
  * Given `this.props.children`, return an object mapping key to child.
@@ -6,8 +7,11 @@ import { Children, cloneElement, isValidElement } from "react";
  * @param {*} children `this.props.children`
  * @return {object} Mapping of key to child
  */
-export function getChildMapping(children, mapFn) {
-	let mapper = (child) =>
+export function getChildMapping(
+	children: ReactElement,
+	mapFn?: (child: ReactElement) => void,
+) {
+	let mapper = (child: ReactElement) =>
 		mapFn && isValidElement(child) ? mapFn(child) : child;
 
 	let result = Object.create(null);
@@ -60,7 +64,7 @@ export function mergeChildMappings(prev, next) {
 		}
 	}
 
-	let i;
+	let i: number;
 	let childMapping = {};
 	for (let nextKey in next) {
 		if (nextKeysPending[nextKey]) {
@@ -81,11 +85,18 @@ export function mergeChildMappings(prev, next) {
 	return childMapping;
 }
 
-function getProp(child, prop, props) {
+function getProp(
+	child: ReactElement,
+	prop: string,
+	props: Record<string, any>,
+) {
 	return props[prop] != null ? props[prop] : child.props[prop];
 }
 
-export function getInitialChildMapping(props, onExited) {
+export function getInitialChildMapping(
+	props: Record<string, any>,
+	onExited: Function,
+) {
 	return getChildMapping(props.children, (child) => {
 		return cloneElement(child, {
 			onExited: onExited.bind(null, child),
@@ -97,7 +108,11 @@ export function getInitialChildMapping(props, onExited) {
 	});
 }
 
-export function getNextChildMapping(nextProps, prevChildMapping, onExited) {
+export function getNextChildMapping(
+	nextProps: Record<string, any>,
+	prevChildMapping,
+	onExited: Function,
+) {
 	let nextChildMapping = getChildMapping(nextProps.children);
 	let children = mergeChildMappings(prevChildMapping, nextChildMapping);
 
@@ -110,12 +125,13 @@ export function getNextChildMapping(nextProps, prevChildMapping, onExited) {
 		const hasNext = key in nextChildMapping;
 
 		const prevChild = prevChildMapping[key];
-		const isLeaving = isValidElement(prevChild) && !prevChild.props.in;
+		const isLeaving =
+			isValidElement(prevChild) && !(prevChild as ReactElement).props.in;
 
 		// item is new (entering)
 		if (hasNext && (!hasPrev || isLeaving)) {
 			// console.log('entering', key)
-			children[key] = cloneElement(child, {
+			children[key] = cloneElement<any>(child, {
 				onExited: onExited.bind(null, child),
 				in: true,
 				exit: getProp(child, "exit", nextProps),
@@ -124,14 +140,14 @@ export function getNextChildMapping(nextProps, prevChildMapping, onExited) {
 		} else if (!hasNext && hasPrev && !isLeaving) {
 			// item is old (exiting)
 			// console.log('leaving', key)
-			children[key] = cloneElement(child, { in: false });
+			children[key] = cloneElement<any>(child, { in: false });
 		} else if (hasNext && hasPrev && isValidElement(prevChild)) {
 			// item hasn't changed transition states
 			// copy over the last transition props;
 			// console.log('unchanged', key)
-			children[key] = cloneElement(child, {
+			children[key] = cloneElement<any>(child, {
 				onExited: onExited.bind(null, child),
-				in: prevChild.props.in,
+				in: (prevChild as ReactElement).props.in,
 				exit: getProp(child, "exit", nextProps),
 				enter: getProp(child, "enter", nextProps),
 			});
