@@ -42,7 +42,7 @@ class TransitionGroupComponent extends React.Component<
 		this.mounted = false;
 	}
 
-	private static getDerivedStateFromProps(
+	static getDerivedStateFromProps(
 		nextProps: TransitionGroupProps,
 		{
 			children: prevChildMapping,
@@ -51,13 +51,10 @@ class TransitionGroupComponent extends React.Component<
 		}: TransitionGroupState,
 	) {
 		return {
-			children: firstRender
-				? getInitialChildMapping(nextProps, handleExited)
-				: getNextChildMapping(
-						nextProps,
-						prevChildMapping,
-						handleExited,
-				  ),
+			children:
+				firstRender ?
+					getInitialChildMapping(nextProps, handleExited)
+				:	getNextChildMapping(nextProps, prevChildMapping, handleExited),
 			firstRender: false,
 		};
 	}

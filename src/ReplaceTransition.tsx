@@ -25,13 +25,14 @@ class ReplaceTransition extends React.Component<ReplaceTransitionProps> {
 
 	private handleLifecycle(handler: string, index: number, originalArgs) {
 		const { children } = this.props;
-		const child = React.Children.toArray(children)[index] as React.ReactElement;
+		const child = React.Children.toArray(children)[
+			index
+		] as React.ReactElement;
 
 		if (child.props[handler]) child.props[handler](...originalArgs);
 		if (this.props[handler]) {
-			const maybeNode = child.props.nodeRef
-				? undefined
-				: ReactDOM.findDOMNode(this);
+			const maybeNode =
+				child.props.nodeRef ? undefined : ReactDOM.findDOMNode(this);
 
 			this.props[handler](maybeNode);
 		}
@@ -39,7 +40,9 @@ class ReplaceTransition extends React.Component<ReplaceTransitionProps> {
 
 	render() {
 		const { children, in: inProp, ...props } = this.props;
-		const [first, second] = React.Children.toArray(children) as React.ReactElement[];
+		const [first, second] = React.Children.toArray(
+			children,
+		) as React.ReactElement[];
 
 		delete props.onEnter;
 		delete props.onEntering;
@@ -50,19 +53,20 @@ class ReplaceTransition extends React.Component<ReplaceTransitionProps> {
 
 		return (
 			<TransitionGroup {...props}>
-				{inProp
-					? React.cloneElement(first, {
-							key: "first",
-							onEnter: this.handleEnter,
-							onEntering: this.handleEntering,
-							onEntered: this.handleEntered,
-					  })
-					: React.cloneElement(second, {
-							key: "second",
-							onEnter: this.handleExit,
-							onEntering: this.handleExiting,
-							onEntered: this.handleExited,
-					  })}
+				{inProp ?
+					React.cloneElement(first, {
+						key: "first",
+						onEnter: this.handleEnter,
+						onEntering: this.handleEntering,
+						onEntered: this.handleEntered,
+					})
+				:	React.cloneElement(second, {
+						key: "second",
+						onEnter: this.handleExit,
+						onEntering: this.handleExiting,
+						onEntered: this.handleExited,
+					})
+				}
 			</TransitionGroup>
 		);
 	}

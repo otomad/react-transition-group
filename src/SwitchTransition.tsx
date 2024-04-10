@@ -1,6 +1,13 @@
 import React from "react";
 import type { ReactElement, ReactNode } from "react";
-import { ENTERED, ENTERING, EXITING, type TransitionStatus } from "./Transition";
+import {
+	ENTERED,
+	ENTERING,
+	ENTERING_END,
+	EXITED,
+	EXITING,
+	type TransitionStatus,
+} from "./Transition";
 import TransitionGroupContext from "./TransitionGroupContext";
 
 function areChildrenDifferent(oldChildren: ReactNode, newChildren: ReactNode) {
@@ -20,10 +27,11 @@ function areChildrenDifferent(oldChildren: ReactNode, newChildren: ReactNode) {
  * Enum of modes for SwitchTransition component
  * @enum { string }
  */
-export enum modes {
-	out = "out-in",
-	in = "in-out",
-}
+export type SwitchTransitionMode =
+	| "out-in"
+	| "in-out"
+	| "default"
+	| "out-in-preload";
 
 const callHook =
 	(element: ReactElement, name: string, callback: () => void) =>
@@ -33,14 +41,14 @@ const callHook =
 	};
 
 const leaveRenders = {
-	[modes.out]: ({ current, changeState }) =>
+	"out-in": ({ current, changeState }) =>
 		React.cloneElement(current, {
 			in: false,
 			onExited: callHook(current, "onExited", () => {
 				changeState(ENTERING, null);
 			}),
 		}),
-	[modes.in]: ({ current, changeState, children }) => [
+	"in-out": ({ current, changeState, children }) => [
 		current,
 		React.cloneElement(children, {
 			in: true,
@@ -49,10 +57,35 @@ const leaveRenders = {
 			}),
 		}),
 	],
-};
+	default: ({ current, children, changeState }) => [
+		React.cloneElement(current, {
+			in: false,
+		}),
+		React.cloneElement(children, {
+			in: true,
+			onEntered: callHook(children, "onEntered", () => {
+				changeState(
+					ENTERING,
+					React.cloneElement(children, { in: true }),
+				);
+			}),
+		}),
+	],
+	"out-in-preload": ({ current, children, changeState }) => [
+		React.cloneElement(current, {
+			in: false,
+			onExited: callHook(current, "onExited", () => {
+				changeState(ENTERING);
+			}),
+		}),
+		React.cloneElement(children, {
+			in: false,
+		}),
+	],
+} satisfies SwitchTransitionRender;
 
 const enterRenders = {
-	[modes.out]: ({ children, changeState }) =>
+	"out-in": ({ children, changeState }) =>
 		React.cloneElement(children, {
 			in: true,
 			onEntered: callHook(children, "onEntered", () => {
@@ -62,7 +95,7 @@ const enterRenders = {
 				);
 			}),
 		}),
-	[modes.in]: ({ current, children, changeState }) => [
+	"in-out": ({ current, children, changeState }) => [
 		React.cloneElement(current, {
 			in: false,
 			onExited: callHook(current, "onExited", () => {
@@ -76,7 +109,32 @@ const enterRenders = {
 			in: true,
 		}),
 	],
-};
+	default: ({ children }) =>
+		React.cloneElement(children, {
+			in: true,
+		}),
+	"out-in-preload": ({ current, children, changeState }) => [
+		React.cloneElement(current, {
+			in: false,
+		}),
+		React.cloneElement(children, {
+			in: true,
+			onEntered: callHook(children, "onEntered", () => {
+				changeState(
+					ENTERING_END,
+					React.cloneElement(children, { in: true }),
+				);
+			}),
+		}),
+	],
+} satisfies SwitchTransitionRender;
+
+const enterEndRenders = {
+	"out-in-preload": ({ current, changeState }) => {
+		setTimeout(() => changeState(ENTERED));
+		return current;
+	},
+} satisfies SwitchTransitionRender;
 
 /**
  * A transition component inspired by the [vue transition modes](https://vuejs.org/v2/guide/transitions.html#Transition-Modes).
@@ -138,8 +196,8 @@ class SwitchTransition extends React.Component<
 	SwitchTransitionProps,
 	SwitchTransitionStates
 > {
-	static defaultProps = {
-		mode: modes.out,
+	static defaultProps: SwitchTransitionProps = {
+		mode: "out-in",
 	};
 
 	state: SwitchTransitionStates = {
@@ -153,14 +211,20 @@ class SwitchTransition extends React.Component<
 		this.appeared = true;
 	}
 
-	private static getDerivedStateFromProps(props, state) {
+	static getDerivedStateFromProps(
+		props: SwitchTransitionProps,
+		state: SwitchTransitionStates,
+	) {
 		if (props.children == null) {
 			return {
 				current: null,
 			};
 		}
 
-		if (state.status === ENTERING && props.mode === modes.in) {
+		if (
+			state.status === ENTERING &&
+			(props.mode === "in-out" || props.mode === "out-in-preload")
+		) {
 			return {
 				status: ENTERING,
 			};
@@ -182,26 +246,34 @@ class SwitchTransition extends React.Component<
 		};
 	}
 
-	private changeState = (status: TransitionStatus, current = this.state.current) => {
+	// private statusRef?: TransitionStatus;
+	private changeState = (
+		status: TransitionStatus,
+		current = this.state.current,
+	) => {
 		this.setState({
 			status,
 			current,
 		});
+		// Fix an issue that cannot be updated in time
+		// this.statusRef =
+		// 	status === ENTERED || status === EXITED ? undefined : status;
 	};
 
 	render() {
-		const {
+		let {
 			props: { children, mode },
 			state: { status, current },
 		} = this;
+		// if (this.statusRef) status = this.statusRef;
 
-		const data = {
+		const data: SwitchTransitionRenderData = {
 			children,
 			current,
 			changeState: this.changeState,
 			status,
 		};
-		let component;
+		let component: ReactNode;
 		switch (status) {
 			case ENTERING:
 				component = enterRenders[mode](data);
@@ -209,8 +281,12 @@ class SwitchTransition extends React.Component<
 			case EXITING:
 				component = leaveRenders[mode](data);
 				break;
+			case ENTERING_END:
+				component = enterEndRenders[mode](data);
+				break;
 			case ENTERED:
 				component = current;
+				break;
 		}
 
 		return (
@@ -223,9 +299,23 @@ class SwitchTransition extends React.Component<
 	}
 }
 
+type SwitchTransitionRenderData = {
+	children: SwitchTransitionProps["children"];
+	current: SwitchTransitionStates["current"];
+	changeState: SwitchTransition["changeState"];
+	status: SwitchTransitionStates["status"];
+};
+
+type SwitchTransitionRender = Partial<
+	Record<
+		SwitchTransitionMode,
+		(data: SwitchTransitionRenderData) => ReactNode
+	>
+>;
+
 interface SwitchTransitionStates {
 	status: TransitionStatus;
-	current: null;
+	current: ReactElement | null;
 }
 
 export interface SwitchTransitionProps {
@@ -236,11 +326,11 @@ export interface SwitchTransitionProps {
 	 *
 	 * @type {'out-in'|'in-out'}
 	 */
-	mode: modes | `${modes}`;
+	mode?: SwitchTransitionMode;
 	/**
 	 * Any `Transition` or `CSSTransition` component.
 	 */
-	children: ReactElement;
-};
+	children?: ReactElement;
+}
 
 export default SwitchTransition;

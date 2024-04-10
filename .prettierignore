@@ -1,5 +1,5 @@
 **/node_modules
 www/.cache/
 www/public/
-lib
+# lib
 *.md

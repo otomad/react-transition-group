@@ -7,10 +7,12 @@ import TransitionGroupContext from "./TransitionGroupContext";
 import { forceReflow } from "./utils/reflow";
 import { cloneRef, endListener } from "./utils/cloneRef";
 import functionModule from "./utils/functionModule";
+import type { TransitionType } from "./CSSTransition";
 
 export const UNMOUNTED = "unmounted";
 export const EXITED = "exited";
 export const ENTERING = "entering";
+export const ENTERING_END = "enteringEnd";
 export const ENTERED = "entered";
 export const EXITING = "exiting";
 
@@ -60,7 +62,7 @@ class TransitionComponent extends React.Component<
 		this.state = { status: initialStatus };
 	}
 
-	private static getDerivedStateFromProps(
+	static getDerivedStateFromProps(
 		{ in: nextIn }: TransitionProps,
 		prevState: TransitionStates,
 	) {
@@ -91,6 +93,14 @@ class TransitionComponent extends React.Component<
 	// }
 
 	componentDidMount() {
+		const node = this.props.nodeRef?.current;
+		const status =
+			this.props.in ?
+				this.props.appear ?
+					"appear"
+				:	"enter"
+			:	"exit";
+		this.props.onMounted?.(node, status);
 		this.updateStatus(true, this.appearStatus);
 	}
 
@@ -132,9 +142,9 @@ class TransitionComponent extends React.Component<
 	}
 
 	private get node() {
-		return this.props.nodeRef
-			? this.props.nodeRef.current
-			: (ReactDOM.findDOMNode(this) as HTMLElement);
+		return this.props.nodeRef ?
+				this.props.nodeRef.current
+			:	(ReactDOM.findDOMNode(this) as HTMLElement);
 	}
 
 	private updateStatus(
@@ -308,12 +318,13 @@ class TransitionComponent extends React.Component<
 		return (
 			// allows for nested Transitions
 			<TransitionGroupContext.Provider value={null}>
-				{typeof children === "function"
-					? children(status, childProps)
-					: React.cloneElement(
-							React.Children.only(children as React.ReactElement),
-							childProps,
-					  )}
+				{typeof children === "function" ?
+					children(status, childProps)
+				:	React.cloneElement(
+						React.Children.only(children as React.ReactElement),
+						childProps,
+					)
+				}
 			</TransitionGroupContext.Provider>
 		);
 	}
@@ -347,6 +358,7 @@ export type TransitionStatus =
 	| typeof ENTERING
 	| typeof ENTERED
 	| typeof EXITING
+	| typeof ENTERING_END
 	| typeof EXITED
 	| typeof UNMOUNTED;
 export type TransitionChildren =
@@ -545,12 +557,19 @@ export interface TransitionProps {
 	 * @type Function(node: HtmlElement) -> void
 	 */
 	onExited?: ExitHandler;
+
+	/**
+	 * Callback fired after the component is mounted.
+	 *
+	 * @param node - The nodeRef you specified.
+	 * @param {"appear" | "enter" | "exit"} status - The component is appear, enter or exit.
+	 */
+	onMounted?: (node: HTMLElement, status: TransitionType) => void;
 }
 
 type TransitionEventPropKeys = {
-	[prop in keyof TransitionProps as string]: prop extends `on${string}`
-		? prop
-		: never;
+	[prop in keyof TransitionProps as string]: prop extends `on${string}` ? prop
+	:	never;
 }[string];
 export type TransitionEventProps = {
 	[prop in TransitionEventPropKeys]?: TransitionProps[prop];
@@ -659,25 +678,24 @@ function noop() {}
  * `'exiting'` to `'exited'`.
  */
 const Transition = functionModule(
-	React.forwardRef<HTMLElement, TransitionProps>(function Transition(
-		props,
-		ref,
-	) {
-		const nodeRef = useRef<HTMLElement | null>(null);
+	React.forwardRef<HTMLElement, TransitionProps>(
+		function Transition(props, ref) {
+			const nodeRef = useRef<HTMLElement | null>(null);
 
-		React.useImperativeHandle(ref, () => nodeRef.current!, []);
+			React.useImperativeHandle(ref, () => nodeRef.current!, []);
 
-		return (
-			<TransitionComponent
-				{...props}
-				{...(props.timeout != null
-					? { timeout: props.timeout }
-					: { nodeRef, addEndListener: endListener() })}
-			>
-				{cloneRef(props.children as ReactNode, nodeRef)}
-			</TransitionComponent>
-		);
-	}),
+			return (
+				<TransitionComponent
+					{...props}
+					{...(props.timeout != null ?
+						{ timeout: props.timeout }
+					:	{ nodeRef, addEndListener: endListener() })}
+				>
+					{cloneRef(props.children as ReactNode, nodeRef)}
+				</TransitionComponent>
+			);
+		},
+	),
 	{
 		Component: TransitionComponent,
 	},

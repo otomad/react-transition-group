@@ -6,8 +6,15 @@ import { forceReflow } from "./utils/reflow";
 import functionModule from "./utils/functionModule";
 import { cloneRef, endListener } from "./utils/cloneRef";
 
+const transitionTypes = ["appear", "enter", "exit"] as const;
+const transitionPhases = ["base", "from", "active", "done"] as const;
+export type TransitionType = (typeof transitionTypes)[number];
+export type TransitionPhase = (typeof transitionPhases)[number];
+
 const preprocessClasses = (classes: string | string[]) =>
-	(typeof classes === "string" ? [classes] : classes).flatMap(classes => classes.split(" "));
+	(typeof classes === "string" ? [classes] : classes).flatMap((classes) =>
+		classes.split(" "),
+	);
 const addClass = (node: Element, classes: string | string[]) =>
 	classes && node?.classList.add(...preprocessClasses(classes));
 const removeClass = (node: Element, classes: string | string[]) =>
@@ -18,6 +25,14 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		classNames: "",
 	};
 
+	private onMounted = (node: HTMLElement, status: TransitionType) => {
+		if (node) {
+			if (status === "exit") this.onExited(node, true);
+			else this.onEntered(node, status === "appear", true);
+		}
+		this.props.onMounted?.(node, status);
+	};
+
 	private appliedClasses: AppliedClasses = {
 		appear: {},
 		enter: {},
@@ -26,7 +41,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 
 	private onEnter: EnterHandler = (node, appearing) => {
 		const type = appearing ? "appear" : "enter";
-		this.removeClasses(node, "exit");
+		this.removeAllClasses(node);
 		this.addClass(node, type, "base");
 		this.addClass(node, type, "from");
 
@@ -45,19 +60,22 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		}
 	};
 
-	private onEntered: EnterHandler = (node, appearing) => {
+	private onEntered = (
+		node: HTMLElement,
+		appearing?: boolean,
+		triggerByMounted = false,
+	) => {
 		const type = appearing ? "appear" : "enter";
 		this.removeClasses(node, type);
 		this.addClass(node, type, "done");
 
-		if (this.props.onEntered) {
+		if (this.props.onEntered && !triggerByMounted) {
 			this.props.onEntered(node, appearing);
 		}
 	};
 
 	private onExit: ExitHandler = (node) => {
-		this.removeClasses(node, "appear");
-		this.removeClasses(node, "enter");
+		this.removeAllClasses(node);
 		this.addClass(node, "exit", "base");
 		this.addClass(node, "exit", "from");
 
@@ -75,41 +93,43 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		}
 	};
 
-	private onExited: ExitHandler = (node) => {
+	private onExited = (node: HTMLElement, triggerByMounted = false) => {
 		this.removeClasses(node, "exit");
 		this.addClass(node, "exit", "done");
 
-		if (this.props.onExited) {
+		if (this.props.onExited && !triggerByMounted) {
 			this.props.onExited(node);
 		}
 	};
 
 	// when prop `nodeRef` is provided `node` is excluded
 	// private resolveArguments = (maybeNode, maybeAppearing) =>
-	// 	this.props.nodeRef
-	// 		? [this.props.nodeRef.current, maybeNode] // here `maybeNode` is actually `appearing`
-	// 		: [maybeNode, maybeAppearing]; // `findDOMNode` was used
+	// 	this.props.nodeRef ?
+	// 		[this.props.nodeRef.current, maybeNode] // here `maybeNode` is actually `appearing`
+	// 	:	[maybeNode, maybeAppearing]; // `findDOMNode` was used
 
-	private getClassNames = (type: AppliedClassType) => {
+	private getClassNames = (type: TransitionType) => {
 		const { classNames } = this.props;
 		const isStringClassNames = typeof classNames === "string";
 		const prefix = isStringClassNames && classNames ? `${classNames}-` : "";
 
-		let baseClassName = isStringClassNames
-			? `${prefix}${type}`
-			: classNames[type];
+		let baseClassName =
+			isStringClassNames ? `${prefix}${type}` : classNames[type];
 
-		let fromClassName = isStringClassNames
-			? `${baseClassName}-from`
-			: classNames[`${type}From`];
+		let fromClassName =
+			isStringClassNames ?
+				`${baseClassName}-from`
+			:	classNames[`${type}From`];
 
-		let activeClassName = isStringClassNames
-			? `${baseClassName}-active`
-			: classNames[`${type}Active`];
+		let activeClassName =
+			isStringClassNames ?
+				`${baseClassName}-active`
+			:	classNames[`${type}Active`];
 
-		let doneClassName = isStringClassNames
-			? `${baseClassName}-done`
-			: classNames[`${type}Done`];
+		let doneClassName =
+			isStringClassNames ?
+				`${baseClassName}-done`
+			:	classNames[`${type}Done`];
 
 		return {
 			baseClassName,
@@ -121,8 +141,8 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 
 	private addClass(
 		node: HTMLElement,
-		type: AppliedClassType,
-		phase: AppliedClassPhase,
+		type: TransitionType,
+		phase: TransitionPhase,
 	) {
 		let className = this.getClassNames(type)[`${phase}ClassName`];
 		const { doneClassName } = this.getClassNames("enter");
@@ -145,18 +165,25 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 
 	private removeClasses(
 		node: Element,
-		type: AppliedClassType,
-		phase?: AppliedClassPhase,
+		type: TransitionType,
+		phase?: TransitionPhase,
 	) {
 		const currentType = this.appliedClasses[type];
 
-		const phases = ["base", "from", "active", "done"] as const;
-		
-		for (const currentPhase of phases) {
-			if (currentType[currentPhase] && (!phase || phase === currentPhase)) {
+		for (const currentPhase of transitionPhases) {
+			if (
+				currentType[currentPhase] &&
+				(!phase || phase === currentPhase)
+			) {
 				removeClass(node, currentType[currentPhase]);
 				delete currentType[currentPhase];
 			}
+		}
+	}
+
+	private removeAllClasses(node: Element) {
+		for (const type of transitionTypes) {
+			this.removeClasses(node, type);
 		}
 	}
 
@@ -166,6 +193,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		return (
 			<Transition.Component
 				{...props}
+				onMounted={this.onMounted}
 				onEnter={this.onEnter}
 				onEntered={this.onEntered}
 				onEntering={this.onEntering}
@@ -176,19 +204,16 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		);
 	}
 }
-
-type AppliedClassType = "appear" | "enter" | "exit";
-type AppliedClassPhase = "base" | "from" | "active" | "done";
 type AppliedClasses = Record<
-	AppliedClassType,
-	Partial<Record<AppliedClassPhase, string>>
+	TransitionType,
+	Partial<Record<TransitionPhase, string>>
 >;
 
 type CSSTransitionClassName = {
-	[type in AppliedClassType as string]: {
-		[phase in AppliedClassPhase as string]: `${type}${phase extends "base"
-			? ""
-			: Capitalize<phase>}`;
+	[type in TransitionType as string]: {
+		[phase in TransitionPhase as string]: `${type}${phase extends "base" ?
+			""
+		:	Capitalize<phase>}`;
 	};
 }[string][string];
 export type CSSTransitionClassNames = Partial<
@@ -397,25 +422,24 @@ export interface CSSTransitionProps extends TransitionProps {
  * prop, make sure to define styles for `.appear-*` classes as well.
  */
 const CSSTransition = functionModule(
-	React.forwardRef<HTMLElement, CSSTransitionProps>(function CSSTransition(
-		props,
-		ref,
-	) {
-		const nodeRef = useRef<HTMLElement | null>(null);
+	React.forwardRef<HTMLElement, CSSTransitionProps>(
+		function CSSTransition(props, ref) {
+			const nodeRef = useRef<HTMLElement | null>(null);
 
-		React.useImperativeHandle(ref, () => nodeRef.current!, []);
+			React.useImperativeHandle(ref, () => nodeRef.current!, []);
 
-		return (
-			<CSSTransitionComponent
-				{...props}
-				{...(props.timeout != null
-					? { timeout: props.timeout }
-					: { nodeRef, addEndListener: endListener() })}
-			>
-				{cloneRef(props.children as React.ReactNode, nodeRef)}
-			</CSSTransitionComponent>
-		);
-	}),
+			return (
+				<CSSTransitionComponent
+					{...props}
+					{...(props.timeout != null ?
+						{ timeout: props.timeout }
+					:	{ nodeRef, addEndListener: endListener() })}
+				>
+					{cloneRef(props.children as React.ReactNode, nodeRef)}
+				</CSSTransitionComponent>
+			);
+		},
+	),
 	{
 		Component: CSSTransitionComponent,
 	},
