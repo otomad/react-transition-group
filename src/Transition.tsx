@@ -72,28 +72,28 @@ class TransitionComponent extends React.Component<
 		return null;
 	}
 
-	// getSnapshotBeforeUpdate(prevProps) {
-	//   let nextStatus = null
+	// getSnapshotBeforeUpdate(prevProps: TransitionProps) {
+	// 	let nextStatus = null;
 
-	//   if (prevProps !== this.props) {
-	//     const { status } = this.state
+	// 	if (prevProps !== this.props) {
+	// 		const { status } = this.state;
 
-	//     if (this.props.in) {
-	//       if (status !== ENTERING && status !== ENTERED) {
-	//         nextStatus = ENTERING
-	//       }
-	//     } else {
-	//       if (status === ENTERING || status === ENTERED) {
-	//         nextStatus = EXITING
-	//       }
-	//     }
-	//   }
+	// 		if (this.props.in) {
+	// 			if (status !== ENTERING && status !== ENTERED) {
+	// 				nextStatus = ENTERING;
+	// 			}
+	// 		} else {
+	// 			if (status === ENTERING || status === ENTERED) {
+	// 				nextStatus = EXITING;
+	// 			}
+	// 		}
+	// 	}
 
-	//   return { nextStatus }
+	// 	return { nextStatus };
 	// }
 
 	componentDidMount() {
-		const node = this.props.nodeRef?.current;
+		const node = this.node;
 		const status =
 			this.props.in ?
 				this.props.appear ?
@@ -105,7 +105,7 @@ class TransitionComponent extends React.Component<
 	}
 
 	componentDidUpdate(prevProps: TransitionProps) {
-		let nextStatus = null;
+		let nextStatus: TransitionStatus | null = null;
 		if (prevProps !== this.props) {
 			const { status } = this.state;
 
@@ -120,10 +120,12 @@ class TransitionComponent extends React.Component<
 			}
 		}
 		this.updateStatus(false, nextStatus);
+		this.props.onUpdated?.(this.node, nextStatus, this.state.status);
 	}
 
 	componentWillUnmount() {
 		this.cancelNextCallback();
+		this.props.onBeforeUnmount?.(this.node, this.state.status);
 	}
 
 	private get timeouts() {
@@ -565,6 +567,27 @@ export interface TransitionProps {
 	 * @param {"appear" | "enter" | "exit"} status - The component is appear, enter or exit.
 	 */
 	onMounted?: (node: HTMLElement, status: TransitionType) => void;
+
+	/**
+	 * Callback fired after the component's state has been updated.
+	 *
+	 * @param node - The nodeRef you specified.
+	 * @param nextStatus - The next transition status.
+	 * @param previousStatus - The previous transition status.
+	 */
+	onUpdated?: (
+		node: HTMLElement,
+		nextStatus: TransitionStatus | null,
+		previousStatus: TransitionStatus,
+	) => void;
+
+	/**
+	 * Callback fired before the component is unmounted.
+	 *
+	 * @param node - The nodeRef you specified.
+	 * @param lastStatus - The last transition status.
+	 */
+	onBeforeUnmount?: (node: HTMLElement, lastStatus: TransitionStatus) => void;
 }
 
 type TransitionEventPropKeys = {
