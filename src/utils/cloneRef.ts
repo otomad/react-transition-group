@@ -64,13 +64,11 @@ export function endListener() {
 	 * @param done A callback function to be executed when the animation ends.
 	 */
 	return (node: HTMLElement, done: () => void) => {
-		node?.addEventListener(
-			"transitionend",
-			(e) => {
-				if (e.target !== e.currentTarget) return;
-				done();
-			},
-			false,
-		);
+		const listener = (e: TransitionEvent) => {
+			if (e.target !== e.currentTarget) return;
+			node?.removeEventListener("transitionend", listener, false);
+			done();
+		};
+		node?.addEventListener("transitionend", listener, false);
 	};
 }

@@ -712,7 +712,11 @@ const Transition = functionModule(
 					{...props}
 					{...(props.timeout != null ?
 						{ timeout: props.timeout }
-					:	{ nodeRef, addEndListener: endListener() })}
+					:	{
+							nodeRef,
+							addEndListener:
+								props.addEndListener ?? endListener(),
+						})}
 				>
 					{cloneRef(props.children as ReactNode, nodeRef)}
 				</TransitionComponent>
