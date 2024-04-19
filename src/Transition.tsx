@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import type { ContextType, ReactNode } from "react";
-import ReactDOM from "react-dom";
+import ReactDOM, { flushSync } from "react-dom";
 
 import config from "./config";
 import TransitionGroupContext from "./TransitionGroupContext";
@@ -225,8 +225,10 @@ class TransitionComponent extends React.Component<
 			this.props.onExiting(node);
 
 			this.onTransitionEnd(timeouts.exit, () => {
-				this.safeSetState({ status: EXITED }, () => {
-					this.props.onExited(node);
+				flushSync(() => {
+					this.safeSetState({ status: EXITED }, () => {
+						this.props.onExited(node);
+					});
 				});
 			});
 		});
