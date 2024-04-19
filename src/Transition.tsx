@@ -503,7 +503,8 @@ export interface TransitionProps {
 	 * exceeds the waiting time, or the transition is not triggered or not detected, the final style layout exception
 	 * is caused.
 	 *
-	 * It will work properly in function component only, and will not work in class component.
+	 * It will work properly in `<Transition>`/`<CssTransition>` function component only, and will not work in
+	 * `<Transition.Component>`/`<CssTransition.Component>` class component.
 	 */
 	maxTimeout?: TransitionTimeout;
 
