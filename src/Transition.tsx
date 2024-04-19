@@ -5,7 +5,8 @@ import ReactDOM, { flushSync } from "react-dom";
 import config from "./config";
 import TransitionGroupContext from "./TransitionGroupContext";
 import { forceReflow } from "./utils/reflow";
-import { cloneRef, endListener } from "./utils/cloneRef";
+import cloneRef from "./utils/cloneRef";
+import endListener from "./utils/endListener";
 import functionModule from "./utils/functionModule";
 import type { TransitionType } from "./CSSTransition";
 

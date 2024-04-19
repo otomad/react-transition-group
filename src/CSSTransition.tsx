@@ -4,7 +4,8 @@ import Transition from "./Transition";
 import type { EnterHandler, ExitHandler, TransitionProps } from "./Transition";
 import { forceReflow } from "./utils/reflow";
 import functionModule from "./utils/functionModule";
-import { cloneRef, endListener } from "./utils/cloneRef";
+import cloneRef from "./utils/cloneRef";
+import endListener from "./utils/endListener";
 
 const transitionTypes = ["appear", "enter", "exit"] as const;
 const transitionPhases = ["base", "from", "active", "done"] as const;
