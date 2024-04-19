@@ -6,7 +6,7 @@ import config from "./config";
 import TransitionGroupContext from "./TransitionGroupContext";
 import { forceReflow } from "./utils/reflow";
 import cloneRef from "./utils/cloneRef";
-import endListener from "./utils/endListener";
+import endListener, { getTimeouts } from "./utils/endListener";
 import functionModule from "./utils/functionModule";
 import type { TransitionType } from "./CSSTransition";
 
@@ -131,23 +131,13 @@ class TransitionComponent extends React.Component<
 
 	private get timeouts() {
 		const { timeout } = this.props;
-		let exit: number, enter: number, appear: number;
-
-		exit = enter = appear = timeout as number;
-
-		if (timeout != null && typeof timeout !== "number") {
-			exit = timeout.exit;
-			enter = timeout.enter;
-			// TODO: remove fallback for next major
-			appear = timeout.appear !== undefined ? timeout.appear : enter;
-		}
-		return { exit, enter, appear };
+		return getTimeouts(timeout);
 	}
 
 	private get node() {
 		return this.props.nodeRef ?
-				this.props.nodeRef.current
-			:	(ReactDOM.findDOMNode(this) as HTMLElement);
+				this.props.nodeRef.current!
+			:	(ReactDOM.findDOMNode(this) as HTMLElement)!;
 	}
 
 	private updateStatus(
@@ -189,21 +179,25 @@ class TransitionComponent extends React.Component<
 		// if we are mounting and running this it means appear _must_ be set
 		if ((!mounting && !enter) || config.disabled) {
 			this.safeSetState({ status: ENTERED }, () => {
-				this.props.onEntered(node);
+				this.props.onEntered?.(node);
 			});
 			return;
 		}
 
-		this.props.onEnter(node, appearing);
+		this.props.onEnter?.(node, appearing);
 
 		this.safeSetState({ status: ENTERING }, () => {
-			this.props.onEntering(node, appearing);
+			this.props.onEntering?.(node, appearing);
 
-			this.onTransitionEnd(enterTimeout, () => {
-				this.safeSetState({ status: ENTERED }, () => {
-					this.props.onEntered(node, appearing);
-				});
-			});
+			this.onTransitionEnd(
+				enterTimeout,
+				() => {
+					this.safeSetState({ status: ENTERED }, () => {
+						this.props.onEntered?.(node, appearing);
+					});
+				},
+				appearing ? "appear" : "enter",
+			);
 		});
 	}
 
@@ -215,23 +209,27 @@ class TransitionComponent extends React.Component<
 		// no exit animation skip right to EXITED
 		if (!exit || config.disabled) {
 			this.safeSetState({ status: EXITED }, () => {
-				this.props.onExited(node);
+				this.props.onExited?.(node);
 			});
 			return;
 		}
 
-		this.props.onExit(node);
+		this.props.onExit?.(node);
 
 		this.safeSetState({ status: EXITING }, () => {
-			this.props.onExiting(node);
+			this.props.onExiting?.(node);
 
-			this.onTransitionEnd(timeouts.exit, () => {
-				flushSync(() => {
-					this.safeSetState({ status: EXITED }, () => {
-						this.props.onExited(node);
+			this.onTransitionEnd(
+				timeouts.exit,
+				() => {
+					flushSync(() => {
+						this.safeSetState({ status: EXITED }, () => {
+							this.props.onExited?.(node);
+						});
 					});
-				});
-			});
+				},
+				"exit",
+			);
 		});
 	}
 
@@ -269,26 +267,29 @@ class TransitionComponent extends React.Component<
 		return (this.nextCallback = nextCallback);
 	}
 
-	private onTransitionEnd(timeout: number, handler: () => void) {
+	private onTransitionEnd(
+		timeout: number | undefined,
+		handler: () => void,
+		status: TransitionType,
+	) {
 		this.setNextCallback(handler);
 		const node = this.node;
 
 		const doesNotHaveTimeoutOrListener =
 			timeout == null && !this.props.addEndListener;
 		if (!node || doesNotHaveTimeoutOrListener) {
-			setTimeout(this.nextCallback, 0);
+			setTimeout(this.nextCallback!, 0);
 			return;
 		}
 
-		if (this.props.addEndListener) {
-			this.props.addEndListener(
-				node,
-				this.nextCallback as unknown as () => void,
-			);
-		}
+		this.props.addEndListener?.(
+			node,
+			this.nextCallback as unknown as () => void,
+			status,
+		);
 
 		if (timeout != null) {
-			setTimeout(this.nextCallback, timeout);
+			setTimeout(this.nextCallback!, timeout);
 		}
 	}
 
@@ -322,7 +323,7 @@ class TransitionComponent extends React.Component<
 
 		return (
 			// allows for nested Transitions
-			<TransitionGroupContext.Provider value={null}>
+			<TransitionGroupContext.Provider value={null!}>
 				{typeof children === "function" ?
 					children(status, childProps)
 				:	React.cloneElement(
@@ -361,11 +362,12 @@ class TransitionComponent extends React.Component<
 
 export type TransitionStatus =
 	| typeof ENTERING
+	| typeof ENTERING_END
 	| typeof ENTERED
 	| typeof EXITING
-	| typeof ENTERING_END
 	| typeof EXITED
 	| typeof UNMOUNTED;
+
 export type TransitionChildren =
 	| ReactNode
 	| ((
@@ -373,7 +375,11 @@ export type TransitionChildren =
 			childProps?: Record<string, unknown>,
 	  ) => ReactNode);
 
-export type EndHandler = (node: HTMLElement, done: () => void) => void;
+export type EndHandler = (
+	node: HTMLElement,
+	done: () => void,
+	status: TransitionType,
+) => void;
 
 export type EnterHandler = (node: HTMLElement, isAppearing?: boolean) => void;
 
@@ -381,7 +387,8 @@ export type ExitHandler = (node: HTMLElement) => void;
 
 export type TransitionTimeout =
 	| number
-	| { enter?: number; exit?: number; appear?: number };
+	| { enter?: number; exit?: number; appear?: number }
+	| undefined;
 
 interface TransitionStates {
 	status: TransitionStatus;
@@ -489,6 +496,16 @@ export interface TransitionProps {
 	 * @type {number | { enter?: number, exit?: number, appear?: number }}
 	 */
 	timeout?: TransitionTimeout;
+
+	/**
+	 * Specifies the maximum duration to wait for the `transitionend` event when the `timeout` prop is not specified
+	 * and the `addEndListener` trigger is not customized. Avoid an issue that when the style transition unexpectedly
+	 * exceeds the waiting time, or the transition is not triggered or not detected, the final style layout exception
+	 * is caused.
+	 *
+	 * It will work properly in function component only, and will not work in class component.
+	 */
+	maxTimeout?: TransitionTimeout;
 
 	/**
 	 * Add a custom transition end trigger. Called with the transitioning
@@ -641,7 +658,7 @@ function noop() {}
  *   entering: { opacity: 1 },
  *   entered:  { opacity: 1 },
  *   exiting:  { opacity: 0 },
- *   exited:  { opacity: 0 },
+ *   exited:   { opacity: 0 },
  * };
  *
  * function Fade({ in: inProp }) {
@@ -718,7 +735,8 @@ const Transition = functionModule(
 					:	{
 							nodeRef,
 							addEndListener:
-								props.addEndListener ?? endListener(),
+								props.addEndListener ??
+								endListener(props.maxTimeout),
 						})}
 				>
 					{cloneRef(props.children as ReactNode, nodeRef)}

@@ -18,7 +18,7 @@ export function getChildMapping(
 	if (children)
 		Children.map(children, (c) => c).forEach((child) => {
 			// run the map function here instead so that the key is the computed one
-			result[child.key] = mapper(child);
+			result[child.key!] = mapper(child);
 		});
 	return result;
 }
@@ -52,7 +52,7 @@ export function mergeChildMappings(prev, next) {
 	// the combined list
 	let nextKeysPending = Object.create(null);
 
-	let pendingKeys = [];
+	let pendingKeys: string[] = [];
 	for (let prevKey in prev) {
 		if (prevKey in next) {
 			if (pendingKeys.length) {

@@ -246,7 +246,6 @@ class SwitchTransition extends React.Component<
 		};
 	}
 
-	// private statusRef?: TransitionStatus;
 	private changeState = (
 		status: TransitionStatus,
 		current = this.state.current,
@@ -255,9 +254,6 @@ class SwitchTransition extends React.Component<
 			status,
 			current,
 		});
-		// Fix an issue that cannot be updated in time
-		// this.statusRef =
-		// 	status === ENTERED || status === EXITED ? undefined : status;
 	};
 
 	render() {
@@ -265,24 +261,23 @@ class SwitchTransition extends React.Component<
 			props: { children, mode },
 			state: { status, current },
 		} = this;
-		// if (this.statusRef) status = this.statusRef;
 
-		const data: SwitchTransitionRenderData = {
+		const data = {
 			children,
 			current,
 			changeState: this.changeState,
 			status,
-		};
+		} as SwitchTransitionRenderData;
 		let component: ReactNode;
 		switch (status) {
 			case ENTERING:
-				component = enterRenders[mode](data);
+				component = enterRenders[mode!](data);
 				break;
 			case EXITING:
-				component = leaveRenders[mode](data);
+				component = leaveRenders[mode!](data);
 				break;
 			case ENTERING_END:
-				component = enterEndRenders[mode](data);
+				component = enterEndRenders[mode!](data);
 				break;
 			case ENTERED:
 				component = current;
@@ -300,8 +295,8 @@ class SwitchTransition extends React.Component<
 }
 
 type SwitchTransitionRenderData = {
-	children: SwitchTransitionProps["children"];
-	current: SwitchTransitionStates["current"];
+	children: NonNullable<SwitchTransitionProps["children"]>;
+	current: NonNullable<SwitchTransitionStates["current"]>;
 	changeState: SwitchTransition["changeState"];
 	status: SwitchTransitionStates["status"];
 };

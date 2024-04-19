@@ -115,22 +115,22 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		const prefix = isStringClassNames && classNames ? `${classNames}-` : "";
 
 		let baseClassName =
-			isStringClassNames ? `${prefix}${type}` : classNames[type];
+			isStringClassNames ? `${prefix}${type}` : classNames![type];
 
 		let fromClassName =
 			isStringClassNames ?
 				`${baseClassName}-from`
-			:	classNames[`${type}From`];
+			:	classNames![`${type}From`];
 
 		let activeClassName =
 			isStringClassNames ?
 				`${baseClassName}-active`
-			:	classNames[`${type}Active`];
+			:	classNames![`${type}Active`];
 
 		let doneClassName =
 			isStringClassNames ?
 				`${baseClassName}-done`
-			:	classNames[`${type}Done`];
+			:	classNames![`${type}Done`];
 
 		return {
 			baseClassName,
@@ -176,7 +176,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 				currentType[currentPhase] &&
 				(!phase || phase === currentPhase)
 			) {
-				removeClass(node, currentType[currentPhase]);
+				removeClass(node, currentType[currentPhase]!);
 				delete currentType[currentPhase];
 			}
 		}
@@ -434,7 +434,10 @@ const CSSTransition = functionModule(
 					{...props}
 					{...(props.timeout != null ?
 						{ timeout: props.timeout }
-					:	{ nodeRef, addEndListener: endListener() })}
+					:	{
+							nodeRef,
+							addEndListener: endListener(props.maxTimeout),
+						})}
 				>
 					{cloneRef(props.children as React.ReactNode, nodeRef)}
 				</CSSTransitionComponent>

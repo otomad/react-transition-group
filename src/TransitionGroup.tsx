@@ -70,17 +70,15 @@ class TransitionGroupComponent extends React.Component<
 			this.props.children as ReactElement,
 		);
 
-		if (child.key in currentChildMapping) return;
+		if (child.key! in currentChildMapping) return;
 
-		if (child.props.onExited) {
-			child.props.onExited(node);
-		}
+		child.props.onExited?.(node);
 
 		if (this.mounted) {
 			this.setState((state) => {
-				let children = { ...state.children };
+				let children = { ...state.children! };
 
-				delete children[child.key];
+				delete children[child.key!];
 				return { children };
 			});
 		}
@@ -94,7 +92,7 @@ class TransitionGroupComponent extends React.Component<
 			...props
 		} = this.props;
 		const { contextValue } = this.state;
-		const children = Object.values(this.state.children).map(childFactory);
+		const children = Object.values(this.state.children!).map(childFactory!);
 
 		delete props.appear;
 		delete props.enter;
