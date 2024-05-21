@@ -9,6 +9,7 @@ import cloneRef from "./utils/cloneRef";
 import endListener, { getTimeouts } from "./utils/endListener";
 import functionModule from "./utils/functionModule";
 import type { TransitionType } from "./CSSTransition";
+import requestAnimationFrame from "./utils/requestAnimationFrame";
 
 export const UNMOUNTED = "unmounted";
 export const EXITED = "exited";
@@ -165,7 +166,7 @@ class TransitionComponent extends React.Component<
 		}
 	}
 
-	private performEnter(mounting: boolean) {
+	private async performEnter(mounting: boolean) {
 		const { enter } = this.props;
 		const context = this.context as ContextType<
 			typeof TransitionGroupContext
@@ -185,6 +186,7 @@ class TransitionComponent extends React.Component<
 		}
 
 		this.props.onEnter?.(node, appearing);
+		if (this.props.requestAnimationFrame) await requestAnimationFrame();
 
 		this.safeSetState({ status: ENTERING }, () => {
 			this.props.onEntering?.(node, appearing);
@@ -201,7 +203,7 @@ class TransitionComponent extends React.Component<
 		});
 	}
 
-	private performExit() {
+	private async performExit() {
 		const { exit } = this.props;
 		const timeouts = this.timeouts;
 		const node = this.node;
@@ -215,6 +217,7 @@ class TransitionComponent extends React.Component<
 		}
 
 		this.props.onExit?.(node);
+		if (this.props.requestAnimationFrame) await requestAnimationFrame();
 
 		this.safeSetState({ status: EXITING }, () => {
 			this.props.onExiting?.(node);
@@ -509,6 +512,13 @@ export interface TransitionProps {
 	maxTimeout?: TransitionTimeout;
 
 	/**
+	 * Provide at least one frame of preparation time for the initial value of the transition.
+	 *
+	 * This will cause the transition to trigger slower, but will ensure that the transition works stably.
+	 */
+	requestAnimationFrame?: boolean;
+
+	/**
 	 * Add a custom transition end trigger. Called with the transitioning
 	 * DOM node and a `done` callback. Allows for more fine grained transition end
 	 * logic. Timeouts are still used as a fallback if provided.
@@ -737,7 +747,10 @@ const Transition = functionModule(
 							nodeRef,
 							addEndListener:
 								props.addEndListener ??
-								endListener(props.maxTimeout),
+								endListener(
+									props.maxTimeout,
+									props.requestAnimationFrame,
+								),
 						})}
 				>
 					{cloneRef(props.children as ReactNode, nodeRef)}

@@ -1,5 +1,6 @@
 import type { TransitionType } from "../CSSTransition";
 import type { TransitionTimeout } from "../Transition";
+import requestAnimationFrame from "./requestAnimationFrame";
 
 /**
  * Returns the animation timeout values for a transition.
@@ -29,7 +30,10 @@ export function getTimeouts(timeout: TransitionTimeout) {
  * @param maxTimeout - Specifies the maximum duration to wait for the `transitionend` event.
  * @returns A function that can be used to remove the event listener when it's no longer needed.
  */
-export default function endListener(maxTimeout: TransitionTimeout) {
+export default function endListener(
+	maxTimeout: TransitionTimeout,
+	doesRequestAnimationFrame?: boolean,
+) {
 	const maxTimeouts = getTimeouts(maxTimeout);
 	/**
 	 * @param node The HTMLElement to listen for the "transitionend" event.
@@ -38,8 +42,9 @@ export default function endListener(maxTimeout: TransitionTimeout) {
 	return (node: HTMLElement, done: () => void, status: TransitionType) => {
 		const maxTimeout = maxTimeouts[status];
 		let maxTimeoutId: NodeJS.Timeout | undefined;
-		const listener = (e?: TransitionEvent) => {
+		const listener = async (e?: TransitionEvent) => {
 			if (e && e.target !== e.currentTarget) return;
+			if (doesRequestAnimationFrame) await requestAnimationFrame();
 			clearTimeout(maxTimeout);
 			node?.removeEventListener("transitionend", listener, false);
 			done();
