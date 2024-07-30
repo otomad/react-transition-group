@@ -1,5 +1,6 @@
 import type { TransitionType } from "../CSSTransition";
 import type { TransitionTimeout } from "../Transition";
+import { isPrefersReducedMotion } from "./isPrefersReducedMotion";
 import requestAnimationFrame from "./requestAnimationFrame";
 
 /**
@@ -40,6 +41,7 @@ export default function endListener(
 	 * @param done A callback function to be executed when the animation ends.
 	 */
 	return (node: HTMLElement, done: () => void, status: TransitionType) => {
+		if (isPrefersReducedMotion()) return done();
 		const maxTimeout = maxTimeouts[status];
 		let maxTimeoutId: NodeJS.Timeout | undefined;
 		const listener = async (e?: TransitionEvent) => {
