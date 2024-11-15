@@ -20,6 +20,8 @@ const addClass = (node: Element, classes: string | string[]) =>
 	classes && node?.classList.add(...preprocessClasses(classes));
 const removeClass = (node: Element, classes: string | string[]) =>
 	classes && node?.classList.remove(...preprocessClasses(classes));
+const setHidden = (node: Element, hidden: boolean) =>
+	hidden ? node.setAttribute("hidden", "") : node.removeAttribute("hidden");
 
 class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 	static defaultProps = {
@@ -59,6 +61,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		}
 
 		this.currentStatus = "entering";
+		this.setHidden(node, false);
 	};
 
 	private onEntering: EnterHandler = (node, appearing) => {
@@ -73,6 +76,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		}
 
 		this.currentStatus = "entering";
+		this.setHidden(node, false);
 	};
 
 	private onEntered = (
@@ -89,6 +93,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		}
 
 		this.currentStatus = undefined;
+		this.setHidden(node, false);
 	};
 
 	private onExit: ExitHandler = (node) => {
@@ -107,6 +112,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		}
 
 		this.currentStatus = "exiting";
+		this.setHidden(node, false);
 	};
 
 	private onExiting: ExitHandler = (node) => {
@@ -120,6 +126,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		}
 
 		this.currentStatus = "exiting";
+		this.setHidden(node, false);
 	};
 
 	private onExited = (node: HTMLElement, triggerByMounted = false) => {
@@ -131,6 +138,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		}
 
 		this.currentStatus = undefined;
+		this.setHidden(node, true);
 	};
 
 	// when prop `nodeRef` is provided `node` is excluded
@@ -224,6 +232,10 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		for (const type of transitionTypes) {
 			this.removeClasses(node, type);
 		}
+	}
+
+	private setHidden(node: Element, hidden: boolean) {
+		if (this.props.hiddenOnExit) setHidden(node, hidden);
 	}
 
 	render() {
@@ -335,6 +347,12 @@ export interface CSSTransitionProps extends TransitionProps {
 	 * When user quickly toggle transition, it will skip the `appear-from`, `enter-from` and `exit-from` style.
 	 */
 	moreCoherentWhenCombo?: boolean;
+
+	/**
+	 * Set `hiddenOnExit` if you'd prefer to hide the component after it finishes exiting.
+	 * (Something like to add `[hidden]` or `display: none`.)
+	 */
+	hiddenOnExit?: boolean;
 
 	/**
 	 * A `<Transition>` callback fired immediately after the 'enter' or 'appear' class is
