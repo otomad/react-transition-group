@@ -205,6 +205,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		);
 	}
 }
+
 type AppliedClasses = Record<
 	TransitionType,
 	Partial<Record<TransitionPhase, string>>
