@@ -40,6 +40,8 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		exit: {},
 	};
 
+	private currentStatus: "entering" | "exiting" | undefined;
+
 	private onEnter: EnterHandler = (node, appearing) => {
 		const type = appearing ? "appear" : "enter";
 		this.removeAllClasses(node);
@@ -49,16 +51,20 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		if (this.props.onEnter) {
 			this.props.onEnter(node, appearing);
 		}
+		this.currentStatus = "entering";
 	};
 
 	private onEntering: EnterHandler = (node, appearing) => {
 		const type = appearing ? "appear" : "enter";
-		this.addClass(node, type, "active");
 		this.removeClasses(node, type, "from");
+		if (this.props.moreCoherentWhenCombo) this.removeAllClasses(node);
+		this.addClass(node, type, "base");
+		this.addClass(node, type, "active");
 
 		if (this.props.onEntering) {
 			this.props.onEntering(node, appearing);
 		}
+		this.currentStatus = "entering";
 	};
 
 	private onEntered = (
@@ -73,6 +79,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		if (this.props.onEntered && !triggerByMounted) {
 			this.props.onEntered(node, appearing);
 		}
+		this.currentStatus = undefined;
 	};
 
 	private onExit: ExitHandler = (node) => {
@@ -83,15 +90,19 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		if (this.props.onExit) {
 			this.props.onExit(node);
 		}
+		this.currentStatus = "exiting";
 	};
 
 	private onExiting: ExitHandler = (node) => {
 		this.removeClasses(node, "exit", "from");
+		if (this.props.moreCoherentWhenCombo) this.removeAllClasses(node);
+		this.addClass(node, "exit", "base");
 		this.addClass(node, "exit", "active");
 
 		if (this.props.onExiting) {
 			this.props.onExiting(node);
 		}
+		this.currentStatus = "exiting";
 	};
 
 	private onExited = (node: HTMLElement, triggerByMounted = false) => {
@@ -101,6 +112,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		if (this.props.onExited && !triggerByMounted) {
 			this.props.onExited(node);
 		}
+		this.currentStatus = undefined;
 	};
 
 	// when prop `nodeRef` is provided `node` is excluded
@@ -154,7 +166,15 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 
 		// This is to force a repaint,
 		// which is necessary in order to transition styles when adding a class name.
-		if (phase === "active") {
+		if (
+			phase === "active" &&
+			!(
+				this.props.moreCoherentWhenCombo &&
+				((this.currentStatus === "exiting" &&
+					(type === "enter" || type === "appear")) ||
+					(this.currentStatus === "entering" && type === "exit"))
+			)
+		) {
 			if (node) forceReflow(node);
 		}
 
