@@ -43,6 +43,12 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 	private currentStatus: "entering" | "exiting" | undefined;
 
 	private onEnter: EnterHandler = (node, appearing) => {
+		if (
+			this.props.moreCoherentWhenCombo &&
+			this.currentStatus === "exiting"
+		)
+			return;
+
 		const type = appearing ? "appear" : "enter";
 		this.removeAllClasses(node);
 		this.addClass(node, type, "base");
@@ -51,6 +57,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		if (this.props.onEnter) {
 			this.props.onEnter(node, appearing);
 		}
+
 		this.currentStatus = "entering";
 	};
 
@@ -64,6 +71,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		if (this.props.onEntering) {
 			this.props.onEntering(node, appearing);
 		}
+
 		this.currentStatus = "entering";
 	};
 
@@ -79,10 +87,17 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		if (this.props.onEntered && !triggerByMounted) {
 			this.props.onEntered(node, appearing);
 		}
+
 		this.currentStatus = undefined;
 	};
 
 	private onExit: ExitHandler = (node) => {
+		if (
+			this.props.moreCoherentWhenCombo &&
+			this.currentStatus === "entering"
+		)
+			return;
+
 		this.removeAllClasses(node);
 		this.addClass(node, "exit", "base");
 		this.addClass(node, "exit", "from");
@@ -90,6 +105,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		if (this.props.onExit) {
 			this.props.onExit(node);
 		}
+
 		this.currentStatus = "exiting";
 	};
 
@@ -102,6 +118,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		if (this.props.onExiting) {
 			this.props.onExiting(node);
 		}
+
 		this.currentStatus = "exiting";
 	};
 
@@ -112,6 +129,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		if (this.props.onExited && !triggerByMounted) {
 			this.props.onExited(node);
 		}
+
 		this.currentStatus = undefined;
 	};
 
@@ -312,6 +330,11 @@ export interface CSSTransitionProps extends TransitionProps {
 	 * }}
 	 */
 	classNames?: string | CSSTransitionClassNames;
+
+	/**
+	 * When user quickly toggle transition, it will skip the `appear-from`, `enter-from` and `exit-from` style.
+	 */
+	moreCoherentWhenCombo?: boolean;
 
 	/**
 	 * A `<Transition>` callback fired immediately after the 'enter' or 'appear' class is

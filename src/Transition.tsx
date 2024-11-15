@@ -185,15 +185,8 @@ class TransitionComponent extends React.Component<
 			return;
 		}
 
-		if (
-			!(
-				this.props.moreCoherentWhenCombo &&
-				this.state.status === "exiting"
-			)
-		) {
-			this.props.onEnter?.(node, appearing);
-			if (this.props.requestAnimationFrame) await requestAnimationFrame();
-		}
+		this.props.onEnter?.(node, appearing);
+		if (this.props.requestAnimationFrame) await requestAnimationFrame();
 
 		this.safeSetState({ status: ENTERING }, () => {
 			this.props.onEntering?.(node, appearing);
@@ -223,15 +216,8 @@ class TransitionComponent extends React.Component<
 			return;
 		}
 
-		if (
-			!(
-				this.props.moreCoherentWhenCombo &&
-				this.state.status === "entering"
-			)
-		) {
-			this.props.onExit?.(node);
-			if (this.props.requestAnimationFrame) await requestAnimationFrame();
-		}
+		this.props.onExit?.(node);
+		if (this.props.requestAnimationFrame) await requestAnimationFrame();
 
 		this.safeSetState({ status: EXITING }, () => {
 			this.props.onExiting?.(node);
@@ -531,11 +517,6 @@ export interface TransitionProps {
 	 * This will cause the transition to trigger slower, but will ensure that the transition works stably.
 	 */
 	requestAnimationFrame?: boolean;
-
-	/**
-	 * When user quickly toggle transition, it will skip the `appear-from`, `enter-from` and `exit-from` style.
-	 */
-	moreCoherentWhenCombo?: boolean;
 
 	/**
 	 * Add a custom transition end trigger. Called with the transitioning
