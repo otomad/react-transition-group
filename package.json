@@ -1,6 +1,6 @@
 {
 	"name": "react-transition-group-fc",
-	"version": "4.5.0",
+	"version": "4.5.1",
 	"description": "A react component toolset for managing animations",
 	"main": "lib/dist/index.js",
 	"module": "lib/dist/index.js",
@@ -37,7 +37,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/reactjs/react-transition-group.git"
+		"url": "git+https://github.com/otomad/react-transition-group.git"
 	},
 	"keywords": [
 		"react",
@@ -51,9 +51,9 @@
 	"author": "lunate",
 	"license": "BSD-3-Clause",
 	"bugs": {
-		"url": "https://github.com/reactjs/react-transition-group/issues"
+		"url": "https://github.com/otomad/react-transition-group/issues"
 	},
-	"homepage": "https://github.com/reactjs/react-transition-group#readme",
+	"homepage": "https://github.com/otomad/react-transition-group#readme",
 	"jest": {
 		"testRegex": "-test\\.js",
 		"setupFiles": [

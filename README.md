@@ -1,6 +1,6 @@
 # react-transition-group-fc
 
-[![npm](https://img.shields.io/npm/v/react-transition-group-fc?logo=npm&logoColor=%23CB3837&label=npm&labelColor=white&color=%23CB3837)](https://www.npmjs.org/package/react-transition-group)
+[![npm](https://img.shields.io/npm/v/react-transition-group-fc?logo=npm&logoColor=%23CB3837&label=npm&labelColor=white&color=%23CB3837)](https://www.npmjs.org/package/react-transition-group-fc)
 [![GitHub](https://img.shields.io/npm/v/react-transition-group-fc?logo=github&label=GitHub&color=%23181717)](https://github.com/otomad/react-transition-group)
 [![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD_3--Clause-orange.svg)][license-url]
 
@@ -26,6 +26,8 @@ pnpm add react-transition-group-fc
 ### TypeScript
 
 This is written in TypeScript, so it directly supports types, without the need for additional installation of type dependencies.
+
+Removed prop-types runtime type analysis and fully utilized TypeScript static analysis.
 
 ## Documentation
 
