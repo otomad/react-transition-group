@@ -203,6 +203,6 @@ Therefore, we let the new element be loaded at the beginning but not displayed, 
 
 Note: This can cause the content in the new element to actually be preloaded but not rendered, so you may need to adjust some of the code, such as increasing the delay of CSS animation properties in the child elements, to avoid the animation playing prematurely before the element is officially displayed.
 
-## Licence
+## License
 
 react-transition-group-fc is available under the [BSD 3-Clause License][license-url]. See the LICENSE file for more info.
