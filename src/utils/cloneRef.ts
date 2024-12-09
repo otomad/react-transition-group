@@ -31,24 +31,19 @@ export default function cloneRef(
 	children: ReactNode,
 	nodeRef: MutableRefObject<Element | null>,
 ) {
-	return React.createElement(
-		React.Fragment,
-		null,
-		React.Children.map(children, (child: ReactNode) => {
-			if (hasRefInReactNode(child)) {
-				// useImperativeHandle(child.ref, () => nodeRef.current!, []);
-				// child.ref.current = nodeRef.current;
-				delete (child.ref as Partial<DomRef<Element>>).current;
-				Object.defineProperty(child.ref, "current", {
-					configurable: true,
-					enumerable: true,
-					get: () => nodeRef.current,
-					set: (value) => (nodeRef.current = value),
-				});
-			}
-			return React.cloneElement(child as ReactElement, {
-				ref: nodeRef,
-			});
-		}),
-	);
+	const child = React.Children.only(children);
+	if (hasRefInReactNode(child)) {
+		// useImperativeHandle(child.ref, () => nodeRef.current!, []);
+		// child.ref.current = nodeRef.current;
+		delete (child.ref as Partial<DomRef<Element>>).current;
+		Object.defineProperty(child.ref, "current", {
+			configurable: true,
+			enumerable: true,
+			get: () => nodeRef.current,
+			set: (value) => (nodeRef.current = value),
+		});
+	}
+	return React.cloneElement(child as ReactElement, {
+		ref: nodeRef,
+	});
 }

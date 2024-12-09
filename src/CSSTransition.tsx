@@ -239,7 +239,12 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 	}
 
 	render() {
-		const { classNames: _, ...props } = this.props;
+		const {
+			classNames: _classNames,
+			moreCoherentWhenCombo: _moreCoherentWhenCombo,
+			hiddenOnExit: _hiddenOnExit,
+			...props
+		} = this.props;
 
 		return (
 			<Transition.Component
