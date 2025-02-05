@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import type { ContextType, ReactNode } from "react";
 import { flushSync } from "react-dom";
+import type * as CSSType from "csstype";
 
 import config from "./config";
 import TransitionGroupContext from "./TransitionGroupContext";
@@ -403,6 +404,8 @@ interface TransitionStates {
 	status: TransitionStatus;
 }
 
+type CSSPropertyHyphenName = keyof CSSType.PropertiesHyphen | (string & {});
+
 export interface TransitionProps {
 	/**
 	 * A React reference to the DOM element that needs to transition:
@@ -525,6 +528,25 @@ export interface TransitionProps {
 	requestAnimationFrame?: boolean;
 
 	/**
+	 * If you do not provide `addEndListener` to you want to use the default `endListener`, and the CSS transition property
+	 * of the element sets different transition durations for multiple different CSS properties, by default it will use the
+	 * shortest duration of the property, rather than the longest duration, because it cannot predict how many properties of
+	 * the element are expected to trigger the transition. Therefore, it is very likely that this will not meet your needs.
+	 * Generally, you may need to use the longest duration of the property.
+	 *
+	 * In the `transitionEndProperty` property, you can tell it which property(ies) you want to notify the transition has ended,
+	 * while the `transitionend` events of other properties will be ignored. You can provide one (string) or more (string array)
+	 * CSS properties (in hyphen case).
+	 *
+	 * It is worth noting that if there are multiple properties change at the same time, only one event will be listened, and it
+	 * is uncertain which one is. In addition, the property name in the event may not be the same as the name you set in the
+	 * transition property. For example, the property you set is `border`, but you may receive `border-bottom-width`; The property
+	 * you set is `inset`, but you may receive `left`. Therefore, be sure to include all possible properties to ensure that
+	 * everything is okay.
+	 */
+	transitionEndProperty?: CSSPropertyHyphenName[] | CSSPropertyHyphenName;
+
+	/**
 	 * Add a custom transition end trigger. Called with the transitioning
 	 * DOM node and a `done` callback. Allows for more fine grained transition end
 	 * logic. Timeouts are still used as a fallback if provided.
@@ -537,6 +559,9 @@ export interface TransitionProps {
 	 *   node.addEventListener('transitionend', done, false);
 	 * }}
 	 * ```
+	 *
+	 * If you do not provide a custom `addEndListener`, it will automatically create an `endListener`.
+	 * It automatically notifies animation ends at the appropriate time by listening to the `transitionend` event of `nodeRef` element.
 	 */
 	addEndListener?: EndHandler;
 

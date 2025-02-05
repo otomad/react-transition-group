@@ -17,7 +17,11 @@ export default function forwardPropsToComponent<TProps extends TransitionProps>(
 				nodeRef,
 				addEndListener:
 					props.addEndListener ??
-					endListener(props.maxTimeout, props.requestAnimationFrame),
+					endListener(
+						props.maxTimeout,
+						props.requestAnimationFrame,
+						props.transitionEndProperty,
+					),
 			}),
 		children: cloneRef(props.children as ReactNode, nodeRef),
 	};

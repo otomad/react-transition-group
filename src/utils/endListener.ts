@@ -1,5 +1,5 @@
 import type { TransitionType } from "../CSSTransition";
-import type { TransitionTimeout } from "../Transition";
+import type { TransitionProps, TransitionTimeout } from "../Transition";
 import { isPrefersReducedMotion } from "./isPrefersReducedMotion";
 import requestAnimationFrame from "./requestAnimationFrame";
 
@@ -34,8 +34,12 @@ export function getTimeouts(timeout: TransitionTimeout) {
 export default function endListener(
 	maxTimeout: TransitionTimeout,
 	doesRequestAnimationFrame?: boolean,
+	endListenerProperties?: TransitionProps["transitionEndProperty"],
 ) {
 	const maxTimeouts = getTimeouts(maxTimeout);
+	endListenerProperties ||= [];
+	if (typeof endListenerProperties === "string")
+		endListenerProperties = [endListenerProperties];
 	/**
 	 * @param node The HTMLElement to listen for the "transitionend" event.
 	 * @param done A callback function to be executed when the animation ends.
@@ -46,6 +50,12 @@ export default function endListener(
 		let maxTimeoutId: NodeJS.Timeout | undefined;
 		const listener = async (e?: TransitionEvent) => {
 			if (e && e.target !== e.currentTarget) return;
+			if (
+				endListenerProperties.length &&
+				e &&
+				!endListenerProperties.includes(e.propertyName)
+			)
+				return;
 			if (doesRequestAnimationFrame) await requestAnimationFrame();
 			clearTimeout(maxTimeout);
 			node?.removeEventListener("transitionend", listener, false);
