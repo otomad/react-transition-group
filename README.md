@@ -60,6 +60,12 @@ If your component does not provide a ref or is a class component, the traditiona
 
 For old class component, you can also use `<Transition.Component>` / `<CssTransition.Component>` to access them.
 
+#### findDOMNode was removed in React 19
+
+> [React 19 Removed APIs](https://react.dev/reference/react-dom#removed-apis)
+
+You cannot rely findDOMNode method to automatically get the child node ref in React 19, especially in legacy React class component. React 18 or lower versions are not affected.
+
 ### *(prefers-reduced-motion: reduce)*
 
 If the user requests to reduce the animation, it will end immediately after any animation starts.

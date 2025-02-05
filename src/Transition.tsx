@@ -1,15 +1,16 @@
 import React, { useRef } from "react";
 import type { ContextType, ReactNode } from "react";
-import ReactDOM, { flushSync } from "react-dom";
+import { flushSync } from "react-dom";
 
 import config from "./config";
 import TransitionGroupContext from "./TransitionGroupContext";
 import { forceReflow } from "./utils/reflow";
-import cloneRef from "./utils/cloneRef";
-import endListener, { getTimeouts } from "./utils/endListener";
+import { getTimeouts } from "./utils/endListener";
 import functionModule from "./utils/functionModule";
 import type { TransitionType } from "./CSSTransition";
 import requestAnimationFrame from "./utils/requestAnimationFrame";
+import findDOMNode from "./utils/findDOMNode";
+import forwardPropsToComponent from "./utils/forwardPropsToComponent";
 
 export const UNMOUNTED = "unmounted";
 export const EXITED = "exited";
@@ -138,7 +139,7 @@ class TransitionComponent extends React.Component<
 	private get node() {
 		return this.props.nodeRef ?
 				this.props.nodeRef.current!
-			:	(ReactDOM.findDOMNode(this) as HTMLElement)!;
+			:	(findDOMNode(this) as HTMLElement)!;
 	}
 
 	private updateStatus(
@@ -745,21 +746,8 @@ const Transition = functionModule(
 
 			return (
 				<TransitionComponent
-					{...props}
-					{...(props.timeout != null ?
-						{ timeout: props.timeout }
-					:	{
-							nodeRef,
-							addEndListener:
-								props.addEndListener ??
-								endListener(
-									props.maxTimeout,
-									props.requestAnimationFrame,
-								),
-						})}
-				>
-					{cloneRef(props.children as ReactNode, nodeRef)}
-				</TransitionComponent>
+					{...forwardPropsToComponent(props, nodeRef)}
+				/>
 			);
 		},
 	),

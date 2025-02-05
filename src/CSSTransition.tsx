@@ -4,8 +4,7 @@ import Transition from "./Transition";
 import type { EnterHandler, ExitHandler, TransitionProps } from "./Transition";
 import { forceReflow } from "./utils/reflow";
 import functionModule from "./utils/functionModule";
-import cloneRef from "./utils/cloneRef";
-import endListener from "./utils/endListener";
+import forwardPropsToComponent from "./utils/forwardPropsToComponent";
 
 const transitionTypes = ["appear", "enter", "exit"] as const;
 const transitionPhases = ["base", "from", "active", "done"] as const;
@@ -498,16 +497,8 @@ const CSSTransition = functionModule(
 
 			return (
 				<CSSTransitionComponent
-					{...props}
-					{...(props.timeout != null ?
-						{ timeout: props.timeout }
-					:	{
-							nodeRef,
-							addEndListener: endListener(props.maxTimeout),
-						})}
-				>
-					{cloneRef(props.children as React.ReactNode, nodeRef)}
-				</CSSTransitionComponent>
+					{...forwardPropsToComponent(props, nodeRef)}
+				/>
 			);
 		},
 	),
