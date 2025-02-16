@@ -141,6 +141,14 @@ Provide at least one frame of preparation time for the initial value of the tran
 
 This will cause the transition to trigger slower, but will ensure that the transition works stably.
 
+#### `disabled`
+
+**Type:** `boolean`
+
+Temporarily disable the transition and end the animation immediately.
+
+Useful when the transition is not expected to be performed in certain specific states.
+
 #### `onMounted`
 
 **Type**

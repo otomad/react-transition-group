@@ -133,7 +133,8 @@ class TransitionComponent extends React.Component<
 	}
 
 	private get timeouts() {
-		const { timeout } = this.props;
+		let { timeout, disabled } = this.props;
+		if (disabled) timeout = 0;
 		return getTimeouts(timeout);
 	}
 
@@ -180,7 +181,7 @@ class TransitionComponent extends React.Component<
 		const enterTimeout = appearing ? timeouts.appear : timeouts.enter;
 		// no enter animation skip right to ENTERED
 		// if we are mounting and running this it means appear _must_ be set
-		if ((!mounting && !enter) || config.disabled) {
+		if ((!mounting && !enter) || config.disabled || this.props.disabled) {
 			this.safeSetState({ status: ENTERED }, () => {
 				this.props.onEntered?.(node);
 			});
@@ -211,7 +212,7 @@ class TransitionComponent extends React.Component<
 		const node = this.node;
 
 		// no exit animation skip right to EXITED
-		if (!exit || config.disabled) {
+		if (!exit || config.disabled || this.props.disabled) {
 			this.safeSetState({ status: EXITED }, () => {
 				this.props.onExited?.(node);
 			});
@@ -326,6 +327,7 @@ class TransitionComponent extends React.Component<
 			maxTimeout: _maxTimeout,
 			requestAnimationFrame: _requestAnimationFrame,
 			transitionEndProperty: _transitionEndProperty,
+			disabled: _disabled,
 			onMounted: _onMounted,
 			onUpdated: _onUpdated,
 			onBeforeUnmount: _onBeforeUnmount,
@@ -546,6 +548,13 @@ export interface TransitionProps {
 	 * everything is okay.
 	 */
 	transitionEndProperty?: CSSPropertyHyphenName[] | CSSPropertyHyphenName;
+
+	/**
+	 * Temporarily disable the transition and end the animation immediately.
+	 *
+	 * Useful when the transition is not expected to be performed in certain specific states.
+	 */
+	disabled?: boolean;
 
 	/**
 	 * Add a custom transition end trigger. Called with the transitioning
