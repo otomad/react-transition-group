@@ -325,6 +325,7 @@ class TransitionComponent extends React.Component<
 			nodeRef: _nodeRef,
 			maxTimeout: _maxTimeout,
 			requestAnimationFrame: _requestAnimationFrame,
+			transitionEndProperty: _transitionEndProperty,
 			onMounted: _onMounted,
 			onUpdated: _onUpdated,
 			onBeforeUnmount: _onBeforeUnmount,
