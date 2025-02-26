@@ -1,5 +1,4 @@
 import React from "react";
-import ReactDOM from "react-dom";
 import TransitionGroup from "./TransitionGroup";
 import type { TransitionEventProps } from "./Transition";
 import findDOMNode from "./utils/findDOMNode";

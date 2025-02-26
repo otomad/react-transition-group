@@ -1,5 +1,7 @@
 import type { MutableRefObject, ReactElement, ReactNode } from "react";
 import React from "react";
+import { majorVersionGeq19 } from "./forwardRef";
+import { isObject } from "./isReactInstance";
 
 type DomRef<E extends Element> = MutableRefObject<E | null>;
 
@@ -9,15 +11,20 @@ type DomRef<E extends Element> = MutableRefObject<E | null>;
  * @param reactNode The ReactNode to check for a ref.
  * @returns A boolean value indicating whether the ReactNode has a ref property.
  */
-export function hasRefInReactNode(
-	reactNode: unknown,
-): reactNode is { ref: MutableRefObject<Element | null> } {
-	return !!(
-		reactNode &&
-		typeof reactNode === "object" &&
-		"ref" in reactNode &&
-		reactNode.ref
-	);
+export function hasRefInReactNode(reactNode: unknown): reactNode is {
+	ref: MutableRefObject<Element | null>;
+	props: { ref: React.RefObject<Element | null> };
+} {
+	if (!majorVersionGeq19)
+		return !!(isObject(reactNode) && "ref" in reactNode && reactNode.ref);
+	else
+		return !!(
+			isObject(reactNode) &&
+			"props" in reactNode &&
+			isObject(reactNode.props) &&
+			"ref" in reactNode.props &&
+			reactNode.props.ref
+		);
 }
 
 /**
@@ -35,8 +42,9 @@ export default function cloneRef(
 	if (hasRefInReactNode(child)) {
 		// useImperativeHandle(child.ref, () => nodeRef.current!, []);
 		// child.ref.current = nodeRef.current;
-		delete (child.ref as Partial<DomRef<Element>>).current;
-		Object.defineProperty(child.ref, "current", {
+		const ref = !majorVersionGeq19 ? child.ref : child.props.ref;
+		delete (ref as Partial<DomRef<Element>>).current;
+		Object.defineProperty(ref, "current", {
 			configurable: true,
 			enumerable: true,
 			get: () => nodeRef.current,

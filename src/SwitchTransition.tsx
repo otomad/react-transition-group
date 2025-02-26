@@ -4,7 +4,6 @@ import {
 	ENTERED,
 	ENTERING,
 	ENTERING_END,
-	EXITED,
 	EXITING,
 	type TransitionStatus,
 } from "./Transition";

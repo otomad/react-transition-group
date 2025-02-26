@@ -1,6 +1,6 @@
 import React from "react";
 
-const majorVersionGeq19 = (() => {
+export const majorVersionGeq19 = (() => {
 	const majorVersion = parseInt(React.version, 10);
 	return majorVersion >= 19 || isNaN(majorVersion);
 })();

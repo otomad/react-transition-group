@@ -1,11 +1,41 @@
 {
 	"name": "react-transition-group-fc",
-	"version": "4.5.5",
+	"version": "4.5.6",
 	"description": "A react component toolset for managing animations",
 	"type": "module",
-	"main": "lib/dist/index.js",
-	"module": "lib/dist/index.js",
-	"types": "lib/dist/types/index.d.ts",
+	"main": "./lib/dist/index.js",
+	"module": "./lib/dist/index.js",
+	"types": "./lib/dist/types/index.d.ts",
+	"exports": {
+		".": {
+			"default": "./lib/dist/index.js",
+			"types": "./lib/dist/types/index.d.ts"
+		},
+		"./CSSTransition": {
+			"default": "./lib/dist/CSSTransition.js",
+			"types": "./lib/dist/types/CSSTransition.d.ts"
+		},
+		"./ReplaceTransition": {
+			"default": "./lib/dist/ReplaceTransition.js",
+			"types": "./lib/dist/types/ReplaceTransition.d.ts"
+		},
+		"./SwitchTransition": {
+			"default": "./lib/dist/SwitchTransition.js",
+			"types": "./lib/dist/types/SwitchTransition.d.ts"
+		},
+		"./TransitionGroup": {
+			"default": "./lib/dist/TransitionGroup.js",
+			"types": "./lib/dist/types/TransitionGroup.d.ts"
+		},
+		"./Transition": {
+			"default": "./lib/dist/Transition.js",
+			"types": "./lib/dist/types/Transition.d.ts"
+		},
+		"./config": {
+			"default": "./lib/dist/config.js",
+			"types": "./lib/dist/types/config.d.ts"
+		}
+	},
 	"scripts": {
 		"test": "npm run lint && npm run testonly",
 		"testonly": "jest --verbose",

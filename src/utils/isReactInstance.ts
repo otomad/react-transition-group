@@ -15,7 +15,7 @@ export type ReactElementOf<
 
 type ReactElementType = string | React.JSXElementConstructor<any>;
 
-function isObject(value: unknown): value is object {
+export function isObject(value: unknown): value is object {
 	return value !== null && typeof value === "object";
 }
 
