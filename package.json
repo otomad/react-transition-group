@@ -2,10 +2,10 @@
 	"name": "react-transition-group-fc",
 	"version": "4.5.5",
 	"description": "A react component toolset for managing animations",
+	"type": "module",
 	"main": "lib/dist/index.js",
 	"module": "lib/dist/index.js",
 	"types": "lib/dist/types/index.d.ts",
-	"type": "module",
 	"scripts": {
 		"test": "npm run lint && npm run testonly",
 		"testonly": "jest --verbose",

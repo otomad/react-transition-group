@@ -14,9 +14,9 @@ const majorVersionGeq19 = (() => {
  *
  * In order to compatible with React 18 and lower versions, this function for polyfill.
  */
-export default function forwardRef<T, P = {}>(render: React.ForwardRefRenderFunction<T, React.PropsWithoutRef<P>>): React.FC<P & { ref?: React.Ref<T | null> }> {
-	if (!majorVersionGeq19)
-		return React.forwardRef(render) as never;
-	else
-		return ({ ref, ...props }) => render(props as never, ref!);
+export default function forwardRef<T, P = {}>(
+	render: React.ForwardRefRenderFunction<T, React.PropsWithoutRef<P>>,
+): React.FC<P & { ref?: React.Ref<T | null> }> {
+	if (!majorVersionGeq19) return React.forwardRef(render) as never;
+	else return ({ ref, ...props }) => render(props as never, ref!);
 }

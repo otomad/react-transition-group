@@ -13,6 +13,7 @@ import requestAnimationFrame from "./utils/requestAnimationFrame";
 import findDOMNode from "./utils/findDOMNode";
 import forwardPropsToComponent from "./utils/forwardPropsToComponent";
 import forwardRef from "./utils/forwardRef";
+import isPrefersReducedMotion from "./utils/isPrefersReducedMotion";
 
 export const UNMOUNTED = "unmounted";
 export const EXITED = "exited";
@@ -226,14 +227,20 @@ class TransitionComponent extends React.Component<
 		this.safeSetState({ status: EXITING }, () => {
 			this.props.onExiting?.(node);
 
+			const onExited = () => {
+				this.safeSetState({ status: EXITED }, () => {
+					this.props.onExited?.(node);
+				});
+			};
+
 			this.onTransitionEnd(
 				timeouts.exit,
 				() => {
-					flushSync(() => {
-						this.safeSetState({ status: EXITED }, () => {
-							this.props.onExited?.(node);
-						});
-					});
+					// When prefering reduced motion, React will get the following error:
+					// > flushSync was called from inside a lifecycle method. React cannot flush when React is already rendering.
+					// > Consider moving this call to a scheduler task or micro task.
+					if (!isPrefersReducedMotion()) flushSync(onExited);
+					else onExited();
 				},
 				"exit",
 			);
@@ -774,19 +781,15 @@ function noop() {}
  * `'exiting'` to `'exited'`.
  */
 const Transition = functionModule(
-	forwardRef<HTMLElement, TransitionProps>(
-		function Transition(props, ref) {
-			const nodeRef = useRef<HTMLElement | null>(null);
+	forwardRef<HTMLElement, TransitionProps>(function Transition(props, ref) {
+		const nodeRef = useRef<HTMLElement | null>(null);
 
-			React.useImperativeHandle(ref, () => nodeRef.current!, []);
+		React.useImperativeHandle(ref, () => nodeRef.current!, []);
 
-			return (
-				<TransitionComponent
-					{...forwardPropsToComponent(props, nodeRef)}
-				/>
-			);
-		},
-	),
+		return (
+			<TransitionComponent {...forwardPropsToComponent(props, nodeRef)} />
+		);
+	}),
 	{
 		Component: TransitionComponent,
 	},

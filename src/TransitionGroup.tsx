@@ -179,13 +179,27 @@ export interface TransitionGroupProps {
 	 * @param child - the exiting child element
 	 * @returns the updated child element
 	 */
-	childFactory?: (child: ReactElement) => ReactElement;
+	childFactory?: TransitionGroupChildFactory;
 
 	/**
 	 * A ref that can be attached to the outer element of the TransitionGroup.
 	 */
 	innerRef?: React.LegacyRef<HTMLElement | null>;
 }
+
+/**
+ * You may need to apply reactive updates to a child as it is exiting.
+ * This is generally done by using `cloneElement` however in the case of an exiting
+ * child the element has already been removed and not accessible to the consumer.
+ *
+ * If you do need to update a child as it leaves you can provide a `childFactory`
+ * to wrap every child, even the ones that are leaving.
+ *
+ * @type Function(child: ReactElement) -> ReactElement
+ * @param child - the exiting child element
+ * @returns the updated child element
+ */
+export type TransitionGroupChildFactory = (child: ReactElement) => ReactElement;
 
 /**
  * The `<TransitionGroup>` component manages a set of transition components

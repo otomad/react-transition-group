@@ -1,6 +1,6 @@
 import type { TransitionType } from "../CSSTransition";
 import type { TransitionProps, TransitionTimeout } from "../Transition";
-import { isPrefersReducedMotion } from "./isPrefersReducedMotion";
+import isPrefersReducedMotion from "./isPrefersReducedMotion";
 import requestAnimationFrame from "./requestAnimationFrame";
 
 /**

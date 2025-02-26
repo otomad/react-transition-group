@@ -38,5 +38,8 @@ export function isReactInstance<T extends ReactElementType>(
 }
 
 export function isTransitionInstance(node: ReactNode): boolean {
-	return isReactInstance(node, Transition) || isReactInstance(node, Transition.Component);
+	return (
+		isReactInstance(node, Transition) ||
+		isReactInstance(node, Transition.Component)
+	);
 }
