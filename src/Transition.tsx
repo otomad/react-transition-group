@@ -12,6 +12,7 @@ import type { TransitionType } from "./CSSTransition";
 import requestAnimationFrame from "./utils/requestAnimationFrame";
 import findDOMNode from "./utils/findDOMNode";
 import forwardPropsToComponent from "./utils/forwardPropsToComponent";
+import forwardRef from "./utils/forwardRef";
 
 export const UNMOUNTED = "unmounted";
 export const EXITED = "exited";
@@ -773,7 +774,7 @@ function noop() {}
  * `'exiting'` to `'exited'`.
  */
 const Transition = functionModule(
-	React.forwardRef<HTMLElement, TransitionProps>(
+	forwardRef<HTMLElement, TransitionProps>(
 		function Transition(props, ref) {
 			const nodeRef = useRef<HTMLElement | null>(null);
 

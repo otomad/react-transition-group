@@ -5,6 +5,7 @@ import type { EnterHandler, ExitHandler, TransitionProps } from "./Transition";
 import { forceReflow } from "./utils/reflow";
 import functionModule from "./utils/functionModule";
 import forwardPropsToComponent from "./utils/forwardPropsToComponent";
+import forwardRef from "./utils/forwardRef";
 
 const transitionTypes = ["appear", "enter", "exit"] as const;
 const transitionPhases = ["base", "from", "active", "done"] as const;
@@ -489,7 +490,7 @@ export interface CSSTransitionProps extends TransitionProps {
  * prop, make sure to define styles for `.appear-*` classes as well.
  */
 const CSSTransition = functionModule(
-	React.forwardRef<HTMLElement, CSSTransitionProps>(
+	forwardRef<HTMLElement, CSSTransitionProps>(
 		function CSSTransition(props, ref) {
 			const nodeRef = useRef<HTMLElement | null>(null);
 

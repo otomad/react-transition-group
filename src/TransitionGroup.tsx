@@ -8,6 +8,7 @@ import {
 	getNextChildMapping,
 } from "./utils/ChildMapping";
 import functionModule from "./utils/functionModule";
+import forwardRef from "./utils/forwardRef";
 
 class TransitionGroupComponent extends React.Component<
 	TransitionGroupProps,
@@ -201,7 +202,7 @@ export interface TransitionGroupProps {
  * items.
  */
 const TransitionGroup = functionModule(
-	React.forwardRef<HTMLElement, Omit<TransitionGroupProps, "innerRef">>(
+	forwardRef<HTMLElement, Omit<TransitionGroupProps, "innerRef">>(
 		function TransitionGroup(props, ref) {
 			return <TransitionGroupComponent innerRef={ref} {...props} />;
 		},
