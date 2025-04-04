@@ -136,7 +136,7 @@ class TransitionComponent extends React.Component<
 
 	private get timeouts() {
 		let { timeout, disabled } = this.props;
-		if (disabled) timeout = 0;
+		if (config.disabled || disabled) timeout = 0;
 		return getTimeouts(timeout);
 	}
 
