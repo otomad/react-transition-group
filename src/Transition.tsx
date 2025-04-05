@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import type { ContextType, ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type * as CSSType from "csstype";
+import { keys } from "ts-transformer-keys";
 
 import config from "./config";
 import TransitionGroupContext from "./TransitionGroupContext";
@@ -14,6 +15,7 @@ import findDOMNode from "./utils/findDOMNode";
 import forwardPropsToComponent from "./utils/forwardPropsToComponent";
 import forwardRef from "./utils/forwardRef";
 import isPrefersReducedMotion from "./utils/isPrefersReducedMotion";
+import { omit } from "./utils/pick-omit";
 
 export const UNMOUNTED = "unmounted";
 export const EXITED = "exited";
@@ -21,6 +23,8 @@ export const ENTERING = "entering";
 export const ENTERING_END = "enteringEnd";
 export const ENTERED = "entered";
 export const EXITING = "exiting";
+
+export const transitionPropKeys = keys<TransitionProps>();
 
 class TransitionComponent extends React.Component<
 	TransitionProps,
@@ -314,33 +318,9 @@ class TransitionComponent extends React.Component<
 			return null;
 		}
 
-		const {
-			children,
-			// filter props for `Transition`
-			in: _in,
-			mountOnEnter: _mountOnEnter,
-			unmountOnExit: _unmountOnExit,
-			appear: _appear,
-			enter: _enter,
-			exit: _exit,
-			timeout: _timeout,
-			addEndListener: _addEndListener,
-			onEnter: _onEnter,
-			onEntering: _onEntering,
-			onEntered: _onEntered,
-			onExit: _onExit,
-			onExiting: _onExiting,
-			onExited: _onExited,
-			nodeRef: _nodeRef,
-			maxTimeout: _maxTimeout,
-			requestAnimationFrame: _requestAnimationFrame,
-			transitionEndProperty: _transitionEndProperty,
-			disabled: _disabled,
-			onMounted: _onMounted,
-			onUpdated: _onUpdated,
-			onBeforeUnmount: _onBeforeUnmount,
-			...childProps
-		} = this.props;
+		// filter props for `Transition`
+		const childProps = omit(this.props, transitionPropKeys),
+			{ children } = this.props;
 
 		return (
 			// allows for nested Transitions

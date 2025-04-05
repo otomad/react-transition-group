@@ -1,5 +1,6 @@
 import React from "react";
 import type { ReactElement, ReactNode } from "react";
+import { keys } from "ts-transformer-keys";
 import {
 	ENTERED,
 	ENTERING,
@@ -134,6 +135,8 @@ const enterEndRenders = {
 		return current;
 	},
 } satisfies SwitchTransitionRender;
+
+export const switchTransitionPropKeys = keys<SwitchTransitionProps>();
 
 /**
  * A transition component inspired by the [vue transition modes](https://vuejs.org/v2/guide/transitions.html#Transition-Modes).

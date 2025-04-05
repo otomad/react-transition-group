@@ -5,8 +5,8 @@ export { default as TransitionGroup } from "./TransitionGroup";
 export { default as Transition } from "./Transition";
 export { default as config } from "./config";
 
-export type * from "./CSSTransition";
-export type * from "./ReplaceTransition";
-export type * from "./SwitchTransition";
-export type * from "./TransitionGroup";
-export type * from "./Transition";
+export * from "./CSSTransition";
+export * from "./ReplaceTransition";
+export * from "./SwitchTransition";
+export * from "./TransitionGroup";
+export * from "./Transition";

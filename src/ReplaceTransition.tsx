@@ -1,7 +1,11 @@
 import React from "react";
+import { keys } from "ts-transformer-keys";
 import TransitionGroup from "./TransitionGroup";
 import type { TransitionEventProps } from "./Transition";
 import findDOMNode from "./utils/findDOMNode";
+import { omit } from "./utils/pick-omit";
+
+export const replaceTransitionPropKeys = keys<ReplaceTransitionProps>();
 
 /**
  * The `<ReplaceTransition>` component is a specialized `Transition` component
@@ -39,20 +43,14 @@ class ReplaceTransition extends React.Component<ReplaceTransitionProps> {
 	}
 
 	render() {
-		const { children, in: inProp, ...props } = this.props;
+		const props = omit(this.props, replaceTransitionPropKeys);
+		const { children, in: inProp } = this.props;
 		const [first, second] = React.Children.toArray(
 			children,
 		) as React.ReactElement[];
 
-		delete props.onEnter;
-		delete props.onEntering;
-		delete props.onEntered;
-		delete props.onExit;
-		delete props.onExiting;
-		delete props.onExited;
-
 		return (
-			<TransitionGroup {...props}>
+			<TransitionGroup.Component {...props}>
 				{inProp ?
 					React.cloneElement(first, {
 						key: "first",
@@ -67,7 +65,7 @@ class ReplaceTransition extends React.Component<ReplaceTransitionProps> {
 						onEntered: this.handleExited,
 					})
 				}
-			</TransitionGroup>
+			</TransitionGroup.Component>
 		);
 	}
 }

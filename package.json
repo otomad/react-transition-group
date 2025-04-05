@@ -1,6 +1,6 @@
 {
 	"name": "react-transition-group-fc",
-	"version": "4.5.7",
+	"version": "4.5.8",
 	"description": "A react component toolset for managing animations",
 	"type": "module",
 	"main": "./lib/dist/index.js",
@@ -63,7 +63,8 @@
 		"storybook": "start-storybook -p 6006",
 		"build-storybook": "build-storybook",
 		"semantic-release": "semantic-release",
-		"rimraf": "./node_modules/rimraf/bin.js"
+		"rimraf": "./node_modules/rimraf/bin.js",
+		"prepare": "ts-patch install -s"
 	},
 	"repository": {
 		"type": "git",
@@ -109,6 +110,8 @@
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
 		"rimraf": "^3.0.2",
+		"ts-patch": "^3.3.0",
+		"ts-transformer-keys": "^0.4.4",
 		"typescript": "^5.4.3"
 	},
 	"unusedDevDependencies": {

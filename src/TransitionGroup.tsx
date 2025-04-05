@@ -1,7 +1,8 @@
 import React from "react";
 import type { ContextType, ReactElement, ReactNode } from "react";
-import TransitionGroupContext from "./TransitionGroupContext";
+import { keys } from "ts-transformer-keys";
 
+import TransitionGroupContext from "./TransitionGroupContext";
 import {
 	getChildMapping,
 	getInitialChildMapping,
@@ -9,6 +10,9 @@ import {
 } from "./utils/ChildMapping";
 import functionModule from "./utils/functionModule";
 import forwardRef from "./utils/forwardRef";
+import { omit } from "./utils/pick-omit";
+
+export const transitionGroupPropKeys = keys<TransitionGroupProps>();
 
 class TransitionGroupComponent extends React.Component<
 	TransitionGroupProps,
@@ -86,20 +90,16 @@ class TransitionGroupComponent extends React.Component<
 	}
 
 	render() {
+		const props = omit(this.props, transitionGroupPropKeys);
 		const {
 			component: Component,
 			childFactory,
 			innerRef,
-			...props
 		} = this.props;
 		const { contextValue } = this.state;
 		const children = Object.values(this.state.children!).map(childFactory!);
 
-		delete props.appear;
-		delete props.enter;
-		delete props.exit;
-
-		if (Component === null) {
+		if (Component == null) {
 			return (
 				<TransitionGroupContext.Provider value={contextValue}>
 					{children}

@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import { keys } from "ts-transformer-keys";
 
 import Transition from "./Transition";
 import type { EnterHandler, ExitHandler, TransitionProps } from "./Transition";
@@ -6,6 +7,7 @@ import { forceReflow } from "./utils/reflow";
 import functionModule from "./utils/functionModule";
 import forwardPropsToComponent from "./utils/forwardPropsToComponent";
 import forwardRef from "./utils/forwardRef";
+import { omit } from "./utils/pick-omit";
 
 const transitionTypes = ["appear", "enter", "exit"] as const;
 const transitionPhases = ["base", "from", "active", "done"] as const;
@@ -22,6 +24,10 @@ const removeClass = (node: Element, classes: string | string[]) =>
 	classes && node?.classList.remove(...preprocessClasses(classes));
 const setHidden = (node: Element, hidden: boolean) =>
 	hidden ? node.setAttribute("hidden", "") : node.removeAttribute("hidden");
+
+export const cssTransitionPropKeys = keys<CSSTransitionProps>();
+export const cssTransitionParticularPropKeys =
+	keys<Omit<CSSTransitionProps, keyof TransitionProps>>();
 
 class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 	static defaultProps = {
@@ -239,12 +245,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 	}
 
 	render() {
-		const {
-			classNames: _classNames,
-			moreCoherentWhenCombo: _moreCoherentWhenCombo,
-			hiddenOnExit: _hiddenOnExit,
-			...props
-		} = this.props;
+		const props = omit(this.props, cssTransitionParticularPropKeys);
 
 		return (
 			<Transition.Component
