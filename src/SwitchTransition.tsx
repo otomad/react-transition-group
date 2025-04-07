@@ -65,8 +65,9 @@ const leaveRenders = {
 			in: true,
 			onEntered: callHook(children, "onEntered", () => {
 				changeState(
-					ENTERING,
+					ENTERED,
 					React.cloneElement(children, { in: true }),
+					true,
 				);
 			}),
 		}),
@@ -92,6 +93,7 @@ const enterRenders = {
 				changeState(
 					ENTERED,
 					React.cloneElement(children, { in: true }),
+					true,
 				);
 			}),
 		}),
@@ -102,6 +104,7 @@ const enterRenders = {
 				changeState(
 					ENTERED,
 					React.cloneElement(children, { in: true }),
+					true,
 				);
 			}),
 		}),
@@ -127,11 +130,24 @@ const enterRenders = {
 			}),
 		}),
 	],
-} satisfies SwitchTransitionRender;
+	interrupt: ({ current, children, changeState }) =>
+		React.cloneElement(children, {
+			in: true,
+			onEntered: callHook(children, "onEntered", () => {
+				changeState(
+					ENTERED,
+					React.cloneElement(children, { in: true }),
+					true,
+				);
+			}),
+		}),
+} satisfies SwitchTransitionRender & {
+	interrupt: SwitchTransitionRenderHandler;
+};
 
 const enterEndRenders = {
 	"out-in-preload": ({ current, changeState }) => {
-		setTimeout(() => changeState(ENTERED));
+		setTimeout(() => changeState(ENTERED, undefined, true));
 		return current;
 	},
 } satisfies SwitchTransitionRender;
@@ -205,6 +221,8 @@ class SwitchTransition extends React.Component<
 	state: SwitchTransitionStates = {
 		status: ENTERED,
 		current: null,
+		isSwitching: "will finish",
+		previousChildren: null,
 	};
 
 	private appeared = false;
@@ -216,52 +234,79 @@ class SwitchTransition extends React.Component<
 	static getDerivedStateFromProps(
 		props: SwitchTransitionProps,
 		state: SwitchTransitionStates,
-	) {
-		if (props.children == null) {
-			return {
-				current: null,
-			};
-		}
-
-		if (
-			state.status === ENTERING &&
-			(props.mode === "in-out" || props.mode === "out-in-preload")
-		) {
-			return {
-				status: ENTERING,
-			};
-		}
-
-		if (
-			state.current &&
-			areChildrenDifferent(state.current, props.children)
-		) {
-			return {
-				status: EXITING,
-			};
-		}
-
+	): Partial<SwitchTransitionStates> {
+		const childrenChanged = areChildrenDifferent(
+			state.previousChildren,
+			props.children,
+		);
 		return {
-			current: React.cloneElement(props.children, {
-				in: true,
-			}),
+			isSwitching:
+				state.isSwitching === "finished" && childrenChanged ?
+					"switching"
+				: state.isSwitching === "will finish" ? "finished"
+				: state.isSwitching,
+			previousChildren: props.children,
+			...(() => {
+				if (props.children == null) {
+					return {
+						current: null,
+					};
+				}
+
+				if (
+					(state.isSwitching === "switching" ||
+						state.isSwitching === "interrupt") &&
+					childrenChanged
+				) {
+					return {
+						isSwitching: "interrupt",
+						status: ENTERING,
+					};
+				}
+
+				if (
+					state.status === ENTERING &&
+					(props.mode === "in-out" || props.mode === "out-in-preload")
+				) {
+					return {
+						status: ENTERING,
+					};
+				}
+
+				if (
+					state.current &&
+					areChildrenDifferent(state.current, props.children)
+				) {
+					return {
+						status: EXITING,
+					};
+				}
+
+				return {
+					current: React.cloneElement(props.children, {
+						in: true,
+					}),
+				};
+			})(),
 		};
 	}
 
 	private changeState = (
 		status: TransitionStatus,
 		current = this.state.current,
+		finished = false,
 	) => {
 		this.setState({
 			status,
 			current,
-		});
+			...(finished && { isSwitching: "will finish" }),
+		} as SwitchTransitionStates);
 	};
 
 	render() {
 		let {
 			props: { children, mode },
-			state: { status, current },
+			state: { status, current, isSwitching },
 		} = this;
 
 		const data = {
@@ -271,19 +316,24 @@ class SwitchTransition extends React.Component<
 			status,
 		} as SwitchTransitionRenderData;
 		let component: ReactNode;
-		switch (status) {
-			case ENTERING:
-				component = enterRenders[mode!](data);
-				break;
-			case EXITING:
-				component = leaveRenders[mode!](data);
-				break;
-			case ENTERING_END:
-				component = enterEndRenders[mode!](data);
-				break;
-			case ENTERED:
-				component = current;
-				break;
+		if (isSwitching === "interrupt") {
+			component = enterRenders.interrupt(data);
+		} else {
+			switch (status) {
+				case ENTERING:
+					component = enterRenders[mode!](data);
+					break;
+				case EXITING:
+					component = leaveRenders[mode!](data);
+					break;
+				case ENTERING_END:
+					component = enterEndRenders[mode!](data);
+					break;
+				case ENTERED:
+				default:
+					component = current;
+					break;
+			}
 		}
 
 		return (
@@ -303,16 +353,19 @@ type SwitchTransitionRenderData = {
 	status: SwitchTransitionStates["status"];
 };
 
+type SwitchTransitionRenderHandler = (
+	data: SwitchTransitionRenderData,
+) => ReactNode;
+
 type SwitchTransitionRender = Partial<
-	Record<
-		SwitchTransitionMode,
-		(data: SwitchTransitionRenderData) => ReactNode
-	>
+	Record<SwitchTransitionMode, SwitchTransitionRenderHandler>
 >;
 
 interface SwitchTransitionStates {
 	status: TransitionStatus;
 	current: ReactElement | null;
+	isSwitching: "switching" | "interrupt" | "will finish" | "finished";
+	previousChildren: ReactElement | null;
 }
 
 export interface SwitchTransitionProps {
@@ -320,8 +373,11 @@ export interface SwitchTransitionProps {
 	 * Transition modes.
 	 * `out-in`: Current element transitions out first, then when complete, the new element transitions in.
 	 * `in-out`: New element transitions in first, then when complete, the current element transitions out.
+	 * `default`: Current element transitions out and the new element transitions in at the same time.
+	 * `out-in-preload`: New element is initially rendered as the real DOM but hidden, and then executed in the same mode as "out-in".
 	 *
-	 * @type {'out-in'|'in-out'}
+	 * @default "out-in"
+	 * @type {"out-in" | "in-out" | "default" | "out-in-preload"}
 	 */
 	mode?: SwitchTransitionMode;
 	/**
