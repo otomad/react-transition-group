@@ -349,7 +349,16 @@ export type EnterHandler = (node: HTMLElement, isAppearing?: boolean) => void;
 
 export type ExitHandler = (node: HTMLElement) => void;
 
-export type TransitionTimeout = number | { enter?: number; exit?: number; appear?: number } | undefined;
+export type TransitionTimeout = number | { appear?: number; enter?: number; exit?: number } | undefined;
+
+type TransitionEndPropertyInOneStatus = CSSPropertyHyphenName[] | CSSPropertyHyphenName;
+export type TransitionEndProperty =
+	| TransitionEndPropertyInOneStatus
+	| {
+			appear?: TransitionEndPropertyInOneStatus;
+			enter?: TransitionEndPropertyInOneStatus;
+			exit?: TransitionEndPropertyInOneStatus;
+	  };
 
 interface TransitionStates {
 	status: TransitionStatus;
@@ -446,9 +455,9 @@ export interface TransitionProps {
 	 *
 	 * ```jsx
 	 * timeout={{
-	 *  appear: 500,
-	 *  enter: 300,
-	 *  exit: 500,
+	 *   appear: 500,
+	 *   enter: 300,
+	 *   exit: 500,
 	 * }}
 	 * ```
 	 *
@@ -456,7 +465,7 @@ export interface TransitionProps {
 	 * - `enter` defaults to `0`
 	 * - `exit` defaults to `0`
 	 *
-	 * @type {number | { enter?: number, exit?: number, appear?: number }}
+	 * @type {number | { appear?: number; enter?: number; exit?: number; }}
 	 */
 	timeout?: TransitionTimeout;
 
@@ -494,8 +503,41 @@ export interface TransitionProps {
 	 * transition property. For example, the property you set is `border`, but you may receive `border-bottom-width`; The property
 	 * you set is `inset`, but you may receive `left`. Therefore, be sure to include all possible properties to ensure that
 	 * everything is okay.
+	 *
+	 * You can specify a single property for all transition states (appear, enter, exit):
+	 *
+	 * ```jsx
+	 * transitionEndProperty="height"
+	 * ```
+	 *
+	 * or multiple properties:
+	 *
+	 * ```jsx
+	 * transitionEndProperty={["width", "height", "inline-size", "block-size"]}
+	 * ```
+	 *
+	 * or individually:
+	 *
+	 * ```jsx
+	 * transitionEndProperty={{
+	 *   appear: "inset",
+	 *   enter: ["width", "inline-size"],
+	 *   exit: ["height", "block-size"],
+	 * }}
+	 * ```
+	 *
+	 * `appear` defaults to the value of `enter` if not specified.
 	 */
-	transitionEndProperty?: CSSPropertyHyphenName[] | CSSPropertyHyphenName;
+	transitionEndProperty?: TransitionEndProperty;
+
+	/**
+	 * This is contrary to the `transitionEndProperty` property and is used to exclude unwanted transition properties.
+	 * The value of the parameter is consistent with the `transitionEndProperty` property.
+	 *
+	 * If you specify two properties at the same time for a same transition state, this property will be ignored,
+	 * and `transitionEndProperty` property shall prevail.
+	 */
+	excludeTransitionEndProperty?: TransitionEndProperty;
 
 	/**
 	 * Temporarily disable the transition and end the animation immediately.

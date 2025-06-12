@@ -32,11 +32,10 @@ export function getTimeouts(timeout: TransitionTimeout) {
 export default function endListener(
 	maxTimeout: TransitionTimeout,
 	doesRequestAnimationFrame?: boolean,
-	endListenerProperties?: TransitionProps["transitionEndProperty"],
+	endListenerProperties: EndListenerProperties = {},
 ) {
 	const maxTimeouts = getTimeouts(maxTimeout);
-	endListenerProperties ||= [];
-	if (typeof endListenerProperties === "string") endListenerProperties = [endListenerProperties];
+	processEndListenerProperties(endListenerProperties);
 	/**
 	 * @param node The HTMLElement to listen for the "transitionend" event.
 	 * @param done A callback function to be executed when the animation ends.
@@ -47,7 +46,15 @@ export default function endListener(
 		let maxTimeoutId: NodeJS.Timeout | undefined;
 		const listener = async (e?: TransitionEvent) => {
 			if (e && e.target !== e.currentTarget) return;
-			if (endListenerProperties.length && e && !endListenerProperties.includes(e.propertyName)) return;
+			if (
+				(endListenerProperties.include[status].length &&
+					e &&
+					!endListenerProperties.include[status].includes(e.propertyName)) ||
+				(endListenerProperties.exclude[status].length &&
+					e &&
+					endListenerProperties.exclude[status].includes(e.propertyName))
+			)
+				return;
 			if (doesRequestAnimationFrame) await requestAnimationFrame();
 			clearTimeout(maxTimeout);
 			node?.removeEventListener("transitionend", listener, false);
@@ -58,4 +65,38 @@ export default function endListener(
 			maxTimeoutId = setTimeout(listener, maxTimeout);
 		}
 	};
+}
+
+type EndListenerProperties = {
+	include?: TransitionProps["transitionEndProperty"];
+	exclude?: TransitionProps["transitionEndProperty"];
+};
+type NormalizedEndListenerProperties = {
+	[filter in keyof EndListenerProperties]-?: {
+		[state in keyof NotStringOrArray<EndListenerProperties[filter]>]-?: NotString<
+			NotStringOrArray<EndListenerProperties[filter]>[state]
+		>;
+	};
+};
+type NotStringOrArray<N, T = NonNullable<N>> =
+	T extends string ? never
+	: T extends any[] ? never
+	: T;
+type NotString<N, T = NonNullable<N>> = T extends string ? never : T;
+
+function processEndListenerProperties(opt: EndListenerProperties): asserts opt is NormalizedEndListenerProperties {
+	const states = ["enter", "exit", "appear"] as const;
+	for (const filter of ["include", "exclude"] as const) {
+		opt[filter] ||= [];
+		if (typeof opt[filter] === "string") opt[filter] = [opt[filter]];
+		if (Array.isArray(opt[filter])) {
+			const same = opt[filter];
+			opt[filter] = {};
+			for (const state of states) opt[filter][state] = same;
+		}
+		for (const state of states) {
+			opt[filter][state] ||= state === "appear" ? opt[filter].enter : [];
+			if (typeof opt[filter][state] === "string") opt[filter][state] = [opt[filter][state]];
+		}
+	}
 }

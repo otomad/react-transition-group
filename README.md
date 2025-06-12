@@ -115,7 +115,36 @@ It will work properly in `<Transition>` / `<CssTransition>` function component o
 
 #### `transitionEndProperty`
 
-**Type:** `string | string[]`
+**Type:**
+
+<table>
+<tbody>
+<tr>
+<td>
+
+```typescript
+string
+```
+</td>
+<td>
+
+```typescript
+string[]
+```
+</td>
+<td>
+
+```typescript
+{
+  enter?: string | string[];
+  exit?: string | string[];
+  appear?: string | string[];
+}
+```
+</td>
+</tr>
+</tbody>
+</table>
 
 If you do not provide `addEndListener` to you want to use the default `endListener`, and the CSS transition property
 of the element sets different transition durations for multiple different CSS properties, by default it will use the
@@ -132,6 +161,69 @@ is uncertain which one is. In addition, the property name in the event may not b
 transition property. For example, the property you set is `border`, but you may receive `border-bottom-width`; The property
 you set is `inset`, but you may receive `left`. Therefore, be sure to include all possible properties to ensure that
 everything is okay.
+
+You can specify a single property for all transition states (appear, enter, exit):
+
+```jsx
+transitionEndProperty="height"
+```
+
+or multiple properties:
+
+```jsx
+transitionEndProperty={["width", "height", "inline-size", "block-size"]}
+```
+
+or individually:
+
+```jsx
+transitionEndProperty={{
+  appear: "inset",
+  enter: ["width", "inline-size"],
+  exit: ["height", "block-size"],
+}}
+```
+
+`appear` defaults to the value of `enter` if not specified.
+
+### excludeTransitionEndProperty
+
+**Type:**
+
+<table>
+<tbody>
+<tr>
+<td>
+
+```typescript
+string
+```
+</td>
+<td>
+
+```typescript
+string[]
+```
+</td>
+<td>
+
+```typescript
+{
+  enter?: string | string[];
+  exit?: string | string[];
+  appear?: string | string[];
+}
+```
+</td>
+</tr>
+</tbody>
+</table>
+
+This is contrary to the `transitionEndProperty` property and is used to exclude unwanted transition properties.
+The value of the parameter is consistent with the `transitionEndProperty` property.
+
+If you specify two properties at the same time for a same transition state, this property will be ignored,
+and `transitionEndProperty` property shall prevail.
 
 #### `requestAnimationFrame`
 
