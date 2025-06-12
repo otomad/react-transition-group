@@ -10,18 +10,13 @@ export default function forwardPropsToComponent<TProps extends TransitionProps>(
 ) {
 	return {
 		...props,
-		...(props.timeout != null && canFindDOMNode() ?
-			{ timeout: props.timeout }
+		...(props.timeout != null && canFindDOMNode() ? { timeout: props.timeout }
 		: props.timeout != null ? { nodeRef, timeout: props.timeout }
 		: {
 				nodeRef,
 				addEndListener:
 					props.addEndListener ??
-					endListener(
-						props.maxTimeout,
-						props.requestAnimationFrame,
-						props.transitionEndProperty,
-					),
+					endListener(props.maxTimeout, props.requestAnimationFrame, props.transitionEndProperty),
 			}),
 		children: cloneRef(props.children as ReactNode, nodeRef),
 	};

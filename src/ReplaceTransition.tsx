@@ -29,14 +29,11 @@ class ReplaceTransition extends React.Component<ReplaceTransitionProps> {
 
 	private handleLifecycle(handler: string, index: number, originalArgs) {
 		const { children } = this.props;
-		const child = React.Children.toArray(children)[
-			index
-		] as React.ReactElement;
+		const child = React.Children.toArray(children)[index] as React.ReactElement;
 
 		if (child.props[handler]) child.props[handler](...originalArgs);
 		if (this.props[handler]) {
-			const maybeNode =
-				child.props.nodeRef ? undefined : findDOMNode(this);
+			const maybeNode = child.props.nodeRef ? undefined : findDOMNode(this);
 
 			this.props[handler](maybeNode);
 		}
@@ -45,9 +42,7 @@ class ReplaceTransition extends React.Component<ReplaceTransitionProps> {
 	render() {
 		const props = omit(this.props, replaceTransitionPropKeys);
 		const { children, in: inProp } = this.props;
-		const [first, second] = React.Children.toArray(
-			children,
-		) as React.ReactElement[];
+		const [first, second] = React.Children.toArray(children) as React.ReactElement[];
 
 		return (
 			<TransitionGroup.Component {...props}>

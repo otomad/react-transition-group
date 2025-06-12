@@ -15,9 +15,7 @@ export type TransitionType = (typeof transitionTypes)[number];
 export type TransitionPhase = (typeof transitionPhases)[number];
 
 const preprocessClasses = (classes: string | string[]) =>
-	(typeof classes === "string" ? [classes] : classes).flatMap((classes) =>
-		classes.split(" "),
-	);
+	(typeof classes === "string" ? [classes] : classes).flatMap((classes) => classes.split(" "));
 const addClass = (node: Element, classes: string | string[]) =>
 	classes && node?.classList.add(...preprocessClasses(classes));
 const removeClass = (node: Element, classes: string | string[]) =>
@@ -26,8 +24,7 @@ const setHidden = (node: Element, hidden: boolean) =>
 	hidden ? node.setAttribute("hidden", "") : node.removeAttribute("hidden");
 
 export const cssTransitionPropKeys = keys<CSSTransitionProps>();
-export const cssTransitionParticularPropKeys =
-	keys<Omit<CSSTransitionProps, keyof TransitionProps>>();
+export const cssTransitionParticularPropKeys = keys<Omit<CSSTransitionProps, keyof TransitionProps>>();
 
 class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 	static defaultProps = {
@@ -51,11 +48,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 	private currentStatus: "entering" | "exiting" | undefined;
 
 	private onEnter: EnterHandler = (node, appearing) => {
-		if (
-			this.props.moreCoherentWhenCombo &&
-			this.currentStatus === "exiting"
-		)
-			return;
+		if (this.props.moreCoherentWhenCombo && this.currentStatus === "exiting") return;
 
 		const type = appearing ? "appear" : "enter";
 		this.removeAllClasses(node);
@@ -85,11 +78,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		this.setHidden(node, false);
 	};
 
-	private onEntered = (
-		node: HTMLElement,
-		appearing?: boolean,
-		triggerByMounted = false,
-	) => {
+	private onEntered = (node: HTMLElement, appearing?: boolean, triggerByMounted = false) => {
 		const type = appearing ? "appear" : "enter";
 		this.removeClasses(node, type);
 		this.addClass(node, type, "done");
@@ -103,11 +92,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 	};
 
 	private onExit: ExitHandler = (node) => {
-		if (
-			this.props.moreCoherentWhenCombo &&
-			this.currentStatus === "entering"
-		)
-			return;
+		if (this.props.moreCoherentWhenCombo && this.currentStatus === "entering") return;
 
 		this.removeAllClasses(node);
 		this.addClass(node, "exit", "base");
@@ -158,23 +143,13 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		const isStringClassNames = typeof classNames === "string";
 		const prefix = isStringClassNames && classNames ? `${classNames}-` : "";
 
-		let baseClassName =
-			isStringClassNames ? `${prefix}${type}` : classNames![type];
+		let baseClassName = isStringClassNames ? `${prefix}${type}` : classNames![type];
 
-		let fromClassName =
-			isStringClassNames ?
-				`${baseClassName}-from`
-			:	classNames![`${type}From`];
+		let fromClassName = isStringClassNames ? `${baseClassName}-from` : classNames![`${type}From`];
 
-		let activeClassName =
-			isStringClassNames ?
-				`${baseClassName}-active`
-			:	classNames![`${type}Active`];
+		let activeClassName = isStringClassNames ? `${baseClassName}-active` : classNames![`${type}Active`];
 
-		let doneClassName =
-			isStringClassNames ?
-				`${baseClassName}-done`
-			:	classNames![`${type}Done`];
+		let doneClassName = isStringClassNames ? `${baseClassName}-done` : classNames![`${type}Done`];
 
 		return {
 			baseClassName,
@@ -184,11 +159,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		};
 	};
 
-	private addClass(
-		node: HTMLElement,
-		type: TransitionType,
-		phase: TransitionPhase,
-	) {
+	private addClass(node: HTMLElement, type: TransitionType, phase: TransitionPhase) {
 		let className = this.getClassNames(type)[`${phase}ClassName`];
 		const { doneClassName } = this.getClassNames("enter");
 
@@ -202,8 +173,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 			phase === "active" &&
 			!(
 				this.props.moreCoherentWhenCombo &&
-				((this.currentStatus === "exiting" &&
-					(type === "enter" || type === "appear")) ||
+				((this.currentStatus === "exiting" && (type === "enter" || type === "appear")) ||
 					(this.currentStatus === "entering" && type === "exit"))
 			)
 		) {
@@ -216,18 +186,11 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 		}
 	}
 
-	private removeClasses(
-		node: Element,
-		type: TransitionType,
-		phase?: TransitionPhase,
-	) {
+	private removeClasses(node: Element, type: TransitionType, phase?: TransitionPhase) {
 		const currentType = this.appliedClasses[type];
 
 		for (const currentPhase of transitionPhases) {
-			if (
-				currentType[currentPhase] &&
-				(!phase || phase === currentPhase)
-			) {
+			if (currentType[currentPhase] && (!phase || phase === currentPhase)) {
 				removeClass(node, currentType[currentPhase]!);
 				delete currentType[currentPhase];
 			}
@@ -262,21 +225,14 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 	}
 }
 
-type AppliedClasses = Record<
-	TransitionType,
-	Partial<Record<TransitionPhase, string>>
->;
+type AppliedClasses = Record<TransitionType, Partial<Record<TransitionPhase, string>>>;
 
 type CSSTransitionClassName = {
 	[type in TransitionType as string]: {
-		[phase in TransitionPhase as string]: `${type}${phase extends "base" ?
-			""
-		:	Capitalize<phase>}`;
+		[phase in TransitionPhase as string]: `${type}${phase extends "base" ? "" : Capitalize<phase>}`;
 	};
 }[string][string];
-export type CSSTransitionClassNames = Partial<
-	Record<CSSTransitionClassName, string>
->;
+export type CSSTransitionClassNames = Partial<Record<CSSTransitionClassName, string>>;
 
 export interface CSSTransitionProps extends TransitionProps {
 	/**
@@ -491,19 +447,13 @@ export interface CSSTransitionProps extends TransitionProps {
  * prop, make sure to define styles for `.appear-*` classes as well.
  */
 const CSSTransition = functionModule(
-	forwardRef<HTMLElement, CSSTransitionProps>(
-		function CSSTransition(props, ref) {
-			const nodeRef = useRef<HTMLElement | null>(null);
+	forwardRef<HTMLElement, CSSTransitionProps>(function CSSTransition(props, ref) {
+		const nodeRef = useRef<HTMLElement | null>(null);
 
-			React.useImperativeHandle(ref, () => nodeRef.current!, []);
+		React.useImperativeHandle(ref, () => nodeRef.current!, []);
 
-			return (
-				<CSSTransitionComponent
-					{...forwardPropsToComponent(props, nodeRef)}
-				/>
-			);
-		},
-	),
+		return <CSSTransitionComponent {...forwardPropsToComponent(props, nodeRef)} />;
+	}),
 	{
 		Component: CSSTransitionComponent,
 	},

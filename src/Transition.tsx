@@ -26,10 +26,7 @@ export const EXITING = "exiting";
 
 export const transitionPropKeys = keys<TransitionProps>();
 
-class TransitionComponent extends React.Component<
-	TransitionProps,
-	TransitionStates
-> {
+class TransitionComponent extends React.Component<TransitionProps, TransitionStates> {
 	static contextType = TransitionGroupContext;
 
 	private appearStatus: TransitionStatus | null;
@@ -39,16 +36,12 @@ class TransitionComponent extends React.Component<
 		cancel: () => void;
 	} | null = null;
 
-	constructor(
-		props: TransitionProps,
-		context: ContextType<typeof TransitionGroupContext>,
-	) {
+	constructor(props: TransitionProps, context: ContextType<typeof TransitionGroupContext>) {
 		super(props, context);
 
 		let parentGroup = context;
 		// In the context of a TransitionGroup all enters are really appears
-		let appear =
-			parentGroup && !parentGroup.isMounting ? props.enter : props.appear;
+		let appear = parentGroup && !parentGroup.isMounting ? props.enter : props.appear;
 
 		let initialStatus: TransitionStatus;
 
@@ -72,10 +65,7 @@ class TransitionComponent extends React.Component<
 		this.state = { status: initialStatus };
 	}
 
-	static getDerivedStateFromProps(
-		{ in: nextIn }: TransitionProps,
-		prevState: TransitionStates,
-	) {
+	static getDerivedStateFromProps({ in: nextIn }: TransitionProps, prevState: TransitionStates) {
 		if (nextIn && prevState.status === UNMOUNTED) {
 			return { status: EXITED };
 		}
@@ -145,15 +135,10 @@ class TransitionComponent extends React.Component<
 	}
 
 	private get node() {
-		return this.props.nodeRef ?
-				this.props.nodeRef.current!
-			:	(findDOMNode(this) as HTMLElement)!;
+		return this.props.nodeRef ? this.props.nodeRef.current! : (findDOMNode(this) as HTMLElement)!;
 	}
 
-	private updateStatus(
-		mounting = false,
-		nextStatus: TransitionStatus | null,
-	) {
+	private updateStatus(mounting = false, nextStatus: TransitionStatus | null) {
 		if (nextStatus !== null) {
 			// nextStatus will always be ENTERING or EXITING.
 			this.cancelNextCallback();
@@ -177,9 +162,7 @@ class TransitionComponent extends React.Component<
 
 	private async performEnter(mounting: boolean) {
 		const { enter } = this.props;
-		const context = this.context as ContextType<
-			typeof TransitionGroupContext
-		>;
+		const context = this.context as ContextType<typeof TransitionGroupContext>;
 		const appearing = context ? context.isMounting : mounting;
 		const node = this.node;
 
@@ -285,26 +268,17 @@ class TransitionComponent extends React.Component<
 		return (this.nextCallback = nextCallback);
 	}
 
-	private onTransitionEnd(
-		timeout: number | undefined,
-		handler: () => void,
-		status: TransitionType,
-	) {
+	private onTransitionEnd(timeout: number | undefined, handler: () => void, status: TransitionType) {
 		this.setNextCallback(handler);
 		const node = this.node;
 
-		const doesNotHaveTimeoutOrListener =
-			timeout == null && !this.props.addEndListener;
+		const doesNotHaveTimeoutOrListener = timeout == null && !this.props.addEndListener;
 		if (!node || doesNotHaveTimeoutOrListener) {
 			setTimeout(this.nextCallback!, 0);
 			return;
 		}
 
-		this.props.addEndListener?.(
-			node,
-			this.nextCallback as unknown as () => void,
-			status,
-		);
+		this.props.addEndListener?.(node, this.nextCallback as unknown as () => void, status);
 
 		if (timeout != null) {
 			setTimeout(this.nextCallback!, timeout);
@@ -327,11 +301,7 @@ class TransitionComponent extends React.Component<
 			<TransitionGroupContext.Provider value={null!}>
 				{typeof children === "function" ?
 					children(status, childProps)
-				:	React.cloneElement(
-						React.Children.only(children as React.ReactElement),
-						childProps,
-					)
-				}
+				:	React.cloneElement(React.Children.only(children as React.ReactElement), childProps)}
 			</TransitionGroupContext.Provider>
 		);
 	}
@@ -371,25 +341,15 @@ export type TransitionStatus =
 
 export type TransitionChildren =
 	| ReactNode
-	| ((
-			status: TransitionStatus,
-			childProps?: Record<string, unknown>,
-	  ) => ReactNode);
+	| ((status: TransitionStatus, childProps?: Record<string, unknown>) => ReactNode);
 
-export type EndHandler = (
-	node: HTMLElement,
-	done: () => void,
-	status: TransitionType,
-) => void;
+export type EndHandler = (node: HTMLElement, done: () => void, status: TransitionType) => void;
 
 export type EnterHandler = (node: HTMLElement, isAppearing?: boolean) => void;
 
 export type ExitHandler = (node: HTMLElement) => void;
 
-export type TransitionTimeout =
-	| number
-	| { enter?: number; exit?: number; appear?: number }
-	| undefined;
+export type TransitionTimeout = number | { enter?: number; exit?: number; appear?: number } | undefined;
 
 interface TransitionStates {
 	status: TransitionStatus;
@@ -635,11 +595,7 @@ export interface TransitionProps {
 	 * @param nextStatus - The next transition status.
 	 * @param previousStatus - The previous transition status.
 	 */
-	onUpdated?: (
-		node: HTMLElement,
-		nextStatus: TransitionStatus | null,
-		previousStatus: TransitionStatus,
-	) => void;
+	onUpdated?: (node: HTMLElement, nextStatus: TransitionStatus | null, previousStatus: TransitionStatus) => void;
 
 	/**
 	 * Callback fired before the component is unmounted.
@@ -651,8 +607,7 @@ export interface TransitionProps {
 }
 
 type TransitionEventPropKeys = {
-	[prop in keyof TransitionProps as string]: prop extends `on${string}` ? prop
-	:	never;
+	[prop in keyof TransitionProps as string]: prop extends `on${string}` ? prop : never;
 }[string];
 export type TransitionEventProps = {
 	[prop in TransitionEventPropKeys]?: TransitionProps[prop];
@@ -766,9 +721,7 @@ const Transition = functionModule(
 
 		React.useImperativeHandle(ref, () => nodeRef.current!, []);
 
-		return (
-			<TransitionComponent {...forwardPropsToComponent(props, nodeRef)} />
-		);
+		return <TransitionComponent {...forwardPropsToComponent(props, nodeRef)} />;
 	}),
 	{
 		Component: TransitionComponent,

@@ -9,8 +9,6 @@ export const canFindDOMNode = () => "findDOMNode" in ReactDOM;
  * `import_react_dom.default.findDOMNode is not a function` error at runtime in React 19.
  */
 export default function findDOMNode(instance: ReactInstance | null | undefined): Element | null | Text {
-	if ("findDOMNode" in ReactDOM)
-		return ReactDOM.findDOMNode(instance);
-	else
-		return null;
+	if ("findDOMNode" in ReactDOM) return ReactDOM.findDOMNode(instance);
+	else return null;
 }

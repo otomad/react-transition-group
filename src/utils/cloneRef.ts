@@ -26,9 +26,7 @@ type Writable<T> = { -readonly [Key in keyof T]: T[Key] };
  * @param object - The React Node to test.
  * @returns The React Node is a valid React Element and **not a React Fragment**?
  */
-export function isValidElement<P>(
-	object: {} | null | undefined,
-): object is ReactElement<P> {
+export function isValidElement<P>(object: {} | null | undefined): object is ReactElement<P> {
 	return React.isValidElement(object) && object?.type !== React.Fragment;
 }
 
@@ -40,10 +38,7 @@ export function isValidElement<P>(
  * @param additionalProps - Add additional custom props. You can also use a handler to return by getting the exist props, or keys.
  * @returns The cloned children with updated refs.
  */
-export default function cloneRef(
-	children: ReactNode,
-	nodeRef: Ref<Element | null>,
-): ReactNode {
+export default function cloneRef(children: ReactNode, nodeRef: Ref<Element | null>): ReactNode {
 	const child = React.Children.only(children);
 	if (!isValidElement<RefAttributes>(child)) return child;
 	const existedRef =
@@ -100,8 +95,7 @@ export function mergeRefs(...refs: (Ref<Element | null> | undefined | null)[]) {
 	mergedRef.refs = new Set();
 	for (const ref of refs)
 		if (!ref) continue;
-		else if (isMergedRef(ref))
-			ref.refs.forEach((ref) => mergedRef.refs.add(ref));
+		else if (isMergedRef(ref)) ref.refs.forEach((ref) => mergedRef.refs.add(ref));
 		else mergedRef.refs.add(ref);
 	mergedRef[MERGED_REF_SYMBOL] = true;
 	return mergedRef;

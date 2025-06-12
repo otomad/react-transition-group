@@ -9,10 +9,7 @@
  * pick({ a: 1, b: 2, c: 3 }, ["a", "c"]); // { a: 1, c: 3 }
  * ```
  */
-export function pick<T extends object, U extends keyof T>(
-	object: T,
-	pickedKeys: U[],
-): Pick<T, U>;
+export function pick<T extends object, U extends keyof T>(object: T, pickedKeys: U[]): Pick<T, U>;
 /**
  * Creates a new object composed of the `object` properties `predicate` returns truthy for.
  * @category Object
@@ -33,11 +30,7 @@ export function pick<T extends object>(
 	predicate: (currentValue: T[keyof T], key: keyof T, object: T) => boolean,
 	thisArg?: any,
 ): Partial<T>;
-export function pick<T>(
-	object: T,
-	predicate: ObjectPickOmitPredicate<T> = [],
-	thisArg?: unknown,
-) {
+export function pick<T>(object: T, predicate: ObjectPickOmitPredicate<T> = [], thisArg?: unknown) {
 	return _objectPickOrOmit(true, object, predicate, thisArg);
 }
 
@@ -52,10 +45,7 @@ export function pick<T>(
  * omit({ a: 1, b: 2, c: 3 }, ["a", "c"]); // { b: 2 }
  * ```
  */
-export function omit<T extends object, U extends keyof T>(
-	object: T,
-	omittedKeys: U[],
-): Omit<T, U>;
+export function omit<T extends object, U extends keyof T>(object: T, omittedKeys: U[]): Omit<T, U>;
 /**
  * creates a new object composed of the own and inherited enumerable properties of `object` that `predicate` doesn't return truthy for.
  * @category Object
@@ -76,17 +66,11 @@ export function omit<T extends object>(
 	predicate: (currentValue: T[keyof T], key: keyof T, object: T) => boolean,
 	thisArg?: any,
 ): Partial<T>;
-export function omit<T>(
-	object: T,
-	predicate: ObjectPickOmitPredicate<T> = [],
-	thisArg?: unknown,
-) {
+export function omit<T>(object: T, predicate: ObjectPickOmitPredicate<T> = [], thisArg?: unknown) {
 	return _objectPickOrOmit(false, object, predicate, thisArg);
 }
 
-type ObjectPickOmitPredicate<T> =
-	| (keyof T)[]
-	| ((currentValue: T[keyof T], key: keyof T, object: T) => boolean);
+type ObjectPickOmitPredicate<T> = (keyof T)[] | ((currentValue: T[keyof T], key: keyof T, object: T) => boolean);
 function _objectPickOrOmit<T>(
 	isPick: boolean,
 	object: T,
@@ -97,16 +81,11 @@ function _objectPickOrOmit<T>(
 		const keys = predicate;
 		predicate = (_, key) => keys.includes(key);
 	}
-	if (thisArg != null)
-		predicate = predicate.bind(thisArg) as typeof predicate;
-	const descriptors = Object.getOwnPropertyDescriptors(object) as Record<
-		string | symbol,
-		PropertyDescriptor
-	>;
+	if (thisArg != null) predicate = predicate.bind(thisArg) as typeof predicate;
+	const descriptors = Object.getOwnPropertyDescriptors(object) as Record<string | symbol, PropertyDescriptor>;
 	for (const key of Reflect.ownKeys(descriptors)) {
 		const descriptor = descriptors[key];
-		const value =
-			"value" in descriptor ? descriptor.value : descriptor.get?.();
+		const value = "value" in descriptor ? descriptor.value : descriptor.get?.();
 		const predicted = predicate(value, key as keyof T, object);
 		if (isPick !== predicted) delete descriptors[key];
 	}

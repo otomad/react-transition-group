@@ -3,27 +3,17 @@ import type { ContextType, ReactElement, ReactNode } from "react";
 import { keys } from "ts-transformer-keys";
 
 import TransitionGroupContext from "./TransitionGroupContext";
-import {
-	getChildMapping,
-	getInitialChildMapping,
-	getNextChildMapping,
-} from "./utils/ChildMapping";
+import { getChildMapping, getInitialChildMapping, getNextChildMapping } from "./utils/ChildMapping";
 import functionModule from "./utils/functionModule";
 import forwardRef from "./utils/forwardRef";
 import { omit } from "./utils/pick-omit";
 
 export const transitionGroupPropKeys = keys<TransitionGroupProps>();
 
-class TransitionGroupComponent extends React.Component<
-	TransitionGroupProps,
-	TransitionGroupState
-> {
+class TransitionGroupComponent extends React.Component<TransitionGroupProps, TransitionGroupState> {
 	private mounted: boolean;
 
-	constructor(
-		props: TransitionGroupProps,
-		context: ContextType<typeof TransitionGroupContext>,
-	) {
+	constructor(props: TransitionGroupProps, context: ContextType<typeof TransitionGroupContext>) {
 		super(props, context);
 
 		const handleExited = this.handleExited.bind(this);
@@ -49,11 +39,7 @@ class TransitionGroupComponent extends React.Component<
 
 	static getDerivedStateFromProps(
 		nextProps: TransitionGroupProps,
-		{
-			children: prevChildMapping,
-			handleExited,
-			firstRender,
-		}: TransitionGroupState,
+		{ children: prevChildMapping, handleExited, firstRender }: TransitionGroupState,
 	) {
 		return {
 			children:
@@ -71,9 +57,7 @@ class TransitionGroupComponent extends React.Component<
 
 	// node is `undefined` when user provided `nodeRef` prop
 	handleExited(child: ReactElement, node: HTMLElement) {
-		let currentChildMapping = getChildMapping(
-			this.props.children as ReactElement,
-		);
+		let currentChildMapping = getChildMapping(this.props.children as ReactElement);
 
 		if (child.key! in currentChildMapping) return;
 
@@ -91,20 +75,12 @@ class TransitionGroupComponent extends React.Component<
 
 	render() {
 		const props = omit(this.props, transitionGroupPropKeys);
-		const {
-			component: Component,
-			childFactory,
-			innerRef,
-		} = this.props;
+		const { component: Component, childFactory, innerRef } = this.props;
 		const { contextValue } = this.state;
 		const children = Object.values(this.state.children!).map(childFactory!);
 
 		if (Component == null) {
-			return (
-				<TransitionGroupContext.Provider value={contextValue}>
-					{children}
-				</TransitionGroupContext.Provider>
-			);
+			return <TransitionGroupContext.Provider value={contextValue}>{children}</TransitionGroupContext.Provider>;
 		}
 		return (
 			<TransitionGroupContext.Provider value={contextValue}>
@@ -216,11 +192,9 @@ export type TransitionGroupChildFactory = (child: ReactElement) => ReactElement;
  * items.
  */
 const TransitionGroup = functionModule(
-	forwardRef<HTMLElement, Omit<TransitionGroupProps, "innerRef">>(
-		function TransitionGroup(props, ref) {
-			return <TransitionGroupComponent innerRef={ref} {...props} />;
-		},
-	),
+	forwardRef<HTMLElement, Omit<TransitionGroupProps, "innerRef">>(function TransitionGroup(props, ref) {
+		return <TransitionGroupComponent innerRef={ref} {...props} />;
+	}),
 	{
 		Component: TransitionGroupComponent,
 	},

@@ -10,9 +10,7 @@ import requestAnimationFrame from "./requestAnimationFrame";
  * @returns An object with the `exit`, `enter`, and `appear` timeout values.
  */
 export function getTimeouts(timeout: TransitionTimeout) {
-	let exit: number | undefined,
-		enter: number | undefined,
-		appear: number | undefined;
+	let exit: number | undefined, enter: number | undefined, appear: number | undefined;
 
 	exit = enter = appear = timeout as number;
 
@@ -38,8 +36,7 @@ export default function endListener(
 ) {
 	const maxTimeouts = getTimeouts(maxTimeout);
 	endListenerProperties ||= [];
-	if (typeof endListenerProperties === "string")
-		endListenerProperties = [endListenerProperties];
+	if (typeof endListenerProperties === "string") endListenerProperties = [endListenerProperties];
 	/**
 	 * @param node The HTMLElement to listen for the "transitionend" event.
 	 * @param done A callback function to be executed when the animation ends.
@@ -50,23 +47,14 @@ export default function endListener(
 		let maxTimeoutId: NodeJS.Timeout | undefined;
 		const listener = async (e?: TransitionEvent) => {
 			if (e && e.target !== e.currentTarget) return;
-			if (
-				endListenerProperties.length &&
-				e &&
-				!endListenerProperties.includes(e.propertyName)
-			)
-				return;
+			if (endListenerProperties.length && e && !endListenerProperties.includes(e.propertyName)) return;
 			if (doesRequestAnimationFrame) await requestAnimationFrame();
 			clearTimeout(maxTimeout);
 			node?.removeEventListener("transitionend", listener, false);
 			done();
 		};
 		node?.addEventListener("transitionend", listener, false);
-		if (
-			maxTimeout != null &&
-			maxTimeout >= 0 &&
-			Number.isFinite(maxTimeout)
-		) {
+		if (maxTimeout != null && maxTimeout >= 0 && Number.isFinite(maxTimeout)) {
 			maxTimeoutId = setTimeout(listener, maxTimeout);
 		}
 	};

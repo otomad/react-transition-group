@@ -7,12 +7,8 @@ import type { ReactElement } from "react";
  * @param {*} children `this.props.children`
  * @return {object} Mapping of key to child
  */
-export function getChildMapping(
-	children: ReactElement,
-	mapFn?: (child: ReactElement) => void,
-) {
-	let mapper = (child: ReactElement) =>
-		mapFn && isValidElement(child) ? mapFn(child) : child;
+export function getChildMapping(children: ReactElement, mapFn?: (child: ReactElement) => void) {
+	let mapper = (child: ReactElement) => (mapFn && isValidElement(child) ? mapFn(child) : child);
 
 	let result = Object.create(null);
 	if (children)
@@ -70,8 +66,7 @@ export function mergeChildMappings(prev, next) {
 		if (nextKeysPending[nextKey]) {
 			for (i = 0; i < nextKeysPending[nextKey].length; i++) {
 				let pendingNextKey = nextKeysPending[nextKey][i];
-				childMapping[nextKeysPending[nextKey][i]] =
-					getValueForKey(pendingNextKey);
+				childMapping[nextKeysPending[nextKey][i]] = getValueForKey(pendingNextKey);
 			}
 		}
 		childMapping[nextKey] = getValueForKey(nextKey);
@@ -85,18 +80,11 @@ export function mergeChildMappings(prev, next) {
 	return childMapping;
 }
 
-function getProp(
-	child: ReactElement,
-	prop: string,
-	props: Record<string, any>,
-) {
+function getProp(child: ReactElement, prop: string, props: Record<string, any>) {
 	return props[prop] != null ? props[prop] : child.props[prop];
 }
 
-export function getInitialChildMapping(
-	props: Record<string, any>,
-	onExited: Function,
-) {
+export function getInitialChildMapping(props: Record<string, any>, onExited: Function) {
 	return getChildMapping(props.children, (child) => {
 		return cloneElement(child, {
 			onExited: onExited.bind(null, child),
@@ -108,11 +96,7 @@ export function getInitialChildMapping(
 	});
 }
 
-export function getNextChildMapping(
-	nextProps: Record<string, any>,
-	prevChildMapping,
-	onExited: Function,
-) {
+export function getNextChildMapping(nextProps: Record<string, any>, prevChildMapping, onExited: Function) {
 	let nextChildMapping = getChildMapping(nextProps.children);
 	let children = mergeChildMappings(prevChildMapping, nextChildMapping);
 
@@ -125,8 +109,7 @@ export function getNextChildMapping(
 		const hasNext = key in nextChildMapping;
 
 		const prevChild = prevChildMapping[key];
-		const isLeaving =
-			isValidElement(prevChild) && !(prevChild as ReactElement).props.in;
+		const isLeaving = isValidElement(prevChild) && !(prevChild as ReactElement).props.in;
 
 		// item is new (entering)
 		if (hasNext && (!hasPrev || isLeaving)) {
