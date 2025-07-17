@@ -129,7 +129,7 @@ class TransitionComponent extends React.Component<TransitionProps, TransitionSta
 	}
 
 	private get timeouts() {
-		let { timeout, disabled } = this.props;
+		let { timeout, disableTransition: disabled } = this.props;
 		if (config.disabled || disabled) timeout = 0;
 		return getTimeouts(timeout);
 	}
@@ -170,7 +170,7 @@ class TransitionComponent extends React.Component<TransitionProps, TransitionSta
 		const enterTimeout = appearing ? timeouts.appear : timeouts.enter;
 		// no enter animation skip right to ENTERED
 		// if we are mounting and running this it means appear _must_ be set
-		if ((!mounting && !enter) || config.disabled || this.props.disabled) {
+		if ((!mounting && !enter) || config.disabled || this.props.disableTransition) {
 			this.safeSetState({ status: ENTERED }, () => {
 				this.props.onEntered?.(node);
 			});
@@ -201,7 +201,7 @@ class TransitionComponent extends React.Component<TransitionProps, TransitionSta
 		const node = this.node;
 
 		// no exit animation skip right to EXITED
-		if (!exit || config.disabled || this.props.disabled) {
+		if (!exit || config.disabled || this.props.disableTransition) {
 			this.safeSetState({ status: EXITED }, () => {
 				this.props.onExited?.(node);
 			});
@@ -481,6 +481,9 @@ export interface TransitionProps {
 	maxTimeout?: TransitionTimeout;
 
 	/**
+	 * Use RAF (requestAnimationFrame) instead of reflow to listen for changes from enter/appear-from to enter/appear-active
+	 * or from exit-active to exit-done.
+	 *
 	 * Provide at least one frame of preparation time for the initial value of the transition.
 	 *
 	 * This will cause the transition to trigger slower, but will ensure that the transition works stably.
@@ -544,7 +547,7 @@ export interface TransitionProps {
 	 *
 	 * Useful when the transition is not expected to be performed in certain specific states.
 	 */
-	disabled?: boolean;
+	disableTransition?: boolean;
 
 	/**
 	 * Add a custom transition end trigger. Called with the transitioning

@@ -4,6 +4,7 @@ export { default as SwitchTransition } from "./SwitchTransition";
 export { default as TransitionGroup } from "./TransitionGroup";
 export { default as Transition } from "./Transition";
 export { default as config } from "./config";
+export { default as tgs } from "./utils/tgs";
 
 export * from "./CSSTransition";
 export * from "./ReplaceTransition";

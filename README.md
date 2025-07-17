@@ -229,17 +229,24 @@ and `transitionEndProperty` property shall prevail.
 
 **Type:** `boolean`
 
+Use RAF (requestAnimationFrame) instead of reflow to listen for changes from enter/appear-from to enter/appear-active
+or from exit-active to exit-done.
+
 Provide at least one frame of preparation time for the initial value of the transition.
 
 This will cause the transition to trigger slower, but will ensure that the transition works stably.
 
-#### `disabled`
+#### `disableTransition`
 
 **Type:** `boolean`
 
 Temporarily disable the transition and end the animation immediately.
 
 Useful when the transition is not expected to be performed in certain specific states.
+
+> In earlier versions, this prop was named `disabled`. However, this would cause `Transition` to intercept the `disabled`
+> attribute passed by the parent component to the child component through `React.cloneElement()`.
+> Therefore, it was renamed as `disableTransition` to avoid it.
 
 #### `onMounted`
 

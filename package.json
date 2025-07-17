@@ -1,6 +1,6 @@
 {
 	"name": "react-transition-group-fc",
-	"version": "4.5.11",
+	"version": "4.6.0",
 	"description": "A react component toolset for managing animations",
 	"type": "module",
 	"main": "./lib/dist/index.js",

@@ -80,7 +80,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 
 	private onEntered = (node: HTMLElement, appearing?: boolean, triggerByMounted = false) => {
 		const type = appearing ? "appear" : "enter";
-		this.removeClasses(node, type);
+		this.removeAllClasses(node);
 		this.addClass(node, type, "done");
 
 		if (this.props.onEntered && !triggerByMounted) {
@@ -121,7 +121,7 @@ class CSSTransitionComponent extends React.Component<CSSTransitionProps> {
 	};
 
 	private onExited = (node: HTMLElement, triggerByMounted = false) => {
-		this.removeClasses(node, "exit");
+		this.removeAllClasses(node);
 		this.addClass(node, "exit", "done");
 
 		if (this.props.onExited && !triggerByMounted) {
