@@ -120,7 +120,6 @@ class TransitionComponent extends React.Component<TransitionProps, TransitionSta
 			}
 		}
 		this.updateStatus(false, nextStatus);
-		this.props.onUpdated?.(this.node, nextStatus, this.state.status);
 	}
 
 	componentWillUnmount() {
@@ -149,7 +148,7 @@ class TransitionComponent extends React.Component<TransitionProps, TransitionSta
 					// https://github.com/reactjs/react-transition-group/pull/749
 					// With unmountOnExit or mountOnEnter, the enter animation should happen at the transition between `exited` and `entering`.
 					// To make the animation happen, we have to separate each rendering and avoid being processed as batched.
-					if (node) forceReflow(node);
+					if (node && !this.props.requestAnimationFrame) forceReflow(node);
 				}
 				this.performEnter(mounting);
 			} else {
@@ -157,6 +156,7 @@ class TransitionComponent extends React.Component<TransitionProps, TransitionSta
 			}
 		} else if (this.props.unmountOnExit && this.state.status === EXITED) {
 			this.setState({ status: UNMOUNTED });
+			this.onUpdated(this.node, "unmounted");
 		}
 	}
 
@@ -172,22 +172,26 @@ class TransitionComponent extends React.Component<TransitionProps, TransitionSta
 		// if we are mounting and running this it means appear _must_ be set
 		if ((!mounting && !enter) || config.disabled || this.props.disableTransition) {
 			this.safeSetState({ status: ENTERED }, () => {
-				this.props.onEntered?.(node);
+				this.props.onEntered?.(node, appearing);
+				this.onUpdated(node, appearing ? "appeared" : "entered");
 			});
 			return;
 		}
 
 		this.props.onEnter?.(node, appearing);
+		this.onUpdated(node, appearing ? "appear" : "enter");
 		if (this.props.requestAnimationFrame) await requestAnimationFrame();
 
 		this.safeSetState({ status: ENTERING }, () => {
 			this.props.onEntering?.(node, appearing);
+			this.onUpdated(node, appearing ? "appearing" : "entering");
 
 			this.onTransitionEnd(
 				enterTimeout,
 				() => {
 					this.safeSetState({ status: ENTERED }, () => {
 						this.props.onEntered?.(node, appearing);
+						this.onUpdated(node, appearing ? "appeared" : "entered");
 					});
 				},
 				appearing ? "appear" : "enter",
@@ -204,19 +208,23 @@ class TransitionComponent extends React.Component<TransitionProps, TransitionSta
 		if (!exit || config.disabled || this.props.disableTransition) {
 			this.safeSetState({ status: EXITED }, () => {
 				this.props.onExited?.(node);
+				this.onUpdated(node, "exited");
 			});
 			return;
 		}
 
 		this.props.onExit?.(node);
+		this.onUpdated(node, "exit");
 		if (this.props.requestAnimationFrame) await requestAnimationFrame();
 
 		this.safeSetState({ status: EXITING }, () => {
 			this.props.onExiting?.(node);
+			this.onUpdated(node, "exiting");
 
 			const onExited = () => {
 				this.safeSetState({ status: EXITED }, () => {
 					this.props.onExited?.(node);
+					this.onUpdated(node, "exited");
 				});
 			};
 
@@ -232,6 +240,12 @@ class TransitionComponent extends React.Component<TransitionProps, TransitionSta
 				"exit",
 			);
 		});
+	}
+
+	private previousStatus: TransitionUpdateStatus = "unmounted";
+	private onUpdated(node: HTMLElement, nextStatus: TransitionUpdateStatus) {
+		this.props.onUpdated?.(node, nextStatus, this.previousStatus);
+		this.previousStatus = nextStatus;
 	}
 
 	private cancelNextCallback() {
@@ -338,6 +352,18 @@ export type TransitionStatus =
 	| typeof EXITING
 	| typeof EXITED
 	| typeof UNMOUNTED;
+
+export type TransitionUpdateStatus =
+	| "appear"
+	| "appearing"
+	| "appeared"
+	| "enter"
+	| "entering"
+	| "entered"
+	| "exit"
+	| "exiting"
+	| "exited"
+	| "unmounted";
 
 export type TransitionChildren =
 	| ReactNode
@@ -640,7 +666,7 @@ export interface TransitionProps {
 	 * @param nextStatus - The next transition status.
 	 * @param previousStatus - The previous transition status.
 	 */
-	onUpdated?: (node: HTMLElement, nextStatus: TransitionStatus | null, previousStatus: TransitionStatus) => void;
+	onUpdated?: (node: HTMLElement, nextStatus: TransitionUpdateStatus, previousStatus: TransitionUpdateStatus) => void;
 
 	/**
 	 * Callback fired before the component is unmounted.
